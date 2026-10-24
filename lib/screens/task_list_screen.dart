@@ -8,12 +8,18 @@ import 'add_task_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
   final List<Task>? tasks;
+  final bool isLoading;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
   final void Function(Task task)? onTaskTap;
   final VoidCallback? onAddTask;
 
   const TaskListScreen({
     super.key,
     this.tasks,
+    this.isLoading = false,
+    this.errorMessage,
+    this.onRetry,
     this.onTaskTap,
     this.onAddTask,
   });
@@ -224,59 +230,168 @@ class _TaskListScreenState extends State<TaskListScreen> {
           ),
         ),
       ),
-      body: tasks.isEmpty
-          ? EmptyState(
-              icon: _selectedFilter == 'Arsip'
-                  ? Icons.archive_outlined
-                  : Icons.search_off_rounded,
-              title: _selectedFilter == 'Arsip'
-                  ? 'Belum Ada Tugas Terarsip'
-                  : 'Tugas Tidak Ditemukan',
-              message: _selectedFilter == 'Arsip'
-                  ? 'Tugas kuliah yang Anda selesaikan dan arsipkan akan muncul di folder arsip ini.'
-                  : 'Tidak ada tugas yang cocok dengan kata kunci atau filter yang Anda pilih.',
-              actionLabel: 'Tambah Tugas Baru',
-              onAction: _openAddTask,
-            )
-          : LayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.maxWidth;
-                final int crossAxisCount;
-                if (width < 600) {
-                  crossAxisCount = 1;
-                } else if (width < 840) {
-                  crossAxisCount = 2;
-                } else {
-                  crossAxisCount = 3;
-                }
-
-                return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                  itemCount: tasks.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 14,
-                    mainAxisSpacing: 14,
-                    mainAxisExtent: crossAxisCount == 1
-                        ? 245
-                        : (crossAxisCount == 2 ? 240 : 250),
+      body: widget.isLoading && _allTasks.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
                   ),
-                  itemBuilder: (context, index) {
-                    final task = tasks[index];
-                    return TaskCard(
-                      title: task.title,
-                      deadline: task.deadline,
-                      priority: task.priority,
-                      status: task.isCompleted ? 'Selesai' : 'Belum Selesai',
-                      description:
-                          task.description.isEmpty ? null : task.description,
-                      margin: EdgeInsets.zero,
-                      onTap: () => _handleTaskTap(task),
-                    );
-                  },
-                );
-              },
-            ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Memuat daftar tugas...',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : widget.errorMessage != null && _allTasks.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFFECACA)),
+                          ),
+                          child: const Icon(
+                            Icons.error_outline_rounded,
+                            color: Color(0xFFDC2626),
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Gagal Memuat Tugas',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                        if (widget.onRetry != null) ...[
+                          const SizedBox(height: 20),
+                          ElevatedButton.icon(
+                            onPressed: widget.onRetry,
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: const Text('Coba Lagi'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0F172A),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                )
+              : tasks.isEmpty
+                  ? EmptyState(
+                      icon: _allTasks.isEmpty
+                          ? Icons.task_outlined
+                          : (_selectedFilter == 'Arsip'
+                              ? Icons.archive_outlined
+                              : Icons.search_off_rounded),
+                      title: _allTasks.isEmpty
+                          ? 'Belum Ada Tugas'
+                          : (_selectedFilter == 'Arsip'
+                              ? 'Belum Ada Tugas Terarsip'
+                              : 'Tugas Tidak Ditemukan'),
+                      message: _allTasks.isEmpty
+                          ? 'Belum ada tugas kuliah yang tersimpan. Ketuk tombol di bawah untuk menambahkan tugas baru.'
+                          : (_selectedFilter == 'Arsip'
+                              ? 'Tugas kuliah yang Anda selesaikan dan arsipkan akan muncul di folder arsip ini.'
+                              : 'Tidak ada tugas yang cocok dengan kata kunci atau filter yang Anda pilih.'),
+                      actionLabel: 'Tambah Tugas Baru',
+                      onAction: _openAddTask,
+                    )
+                  : Column(
+                      children: [
+                        if (widget.isLoading && _allTasks.isNotEmpty)
+                          const LinearProgressIndicator(
+                            minHeight: 2.5,
+                            backgroundColor: Colors.transparent,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFF2563EB),
+                            ),
+                          ),
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final width = constraints.maxWidth;
+                              final int crossAxisCount;
+                              if (width < 600) {
+                                crossAxisCount = 1;
+                              } else if (width < 840) {
+                                crossAxisCount = 2;
+                              } else {
+                                crossAxisCount = 3;
+                              }
+
+                              return GridView.builder(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                                itemCount: tasks.length,
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: 14,
+                                  mainAxisSpacing: 14,
+                                  mainAxisExtent: crossAxisCount == 1
+                                      ? 245
+                                      : (crossAxisCount == 2 ? 240 : 250),
+                                ),
+                                itemBuilder: (context, index) {
+                                  final task = tasks[index];
+                                  return TaskCard(
+                                    title: task.title,
+                                    deadline: task.deadline,
+                                    priority: task.priority,
+                                    status: task.isCompleted
+                                        ? 'Selesai'
+                                        : 'Belum Selesai',
+                                    description: task.description.isEmpty
+                                        ? null
+                                        : task.description,
+                                    margin: EdgeInsets.zero,
+                                    onTap: () => _handleTaskTap(task),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'task_list_add_task_fab',
         onPressed: _openAddTask,

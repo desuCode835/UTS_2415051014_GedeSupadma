@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/task.dart';
-import '../data/sample_tasks.dart';
+import '../providers/task_provider.dart';
 import 'home_screen.dart';
 import 'task_list_screen.dart';
 import 'profile_screen.dart';
@@ -21,13 +22,11 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
-  late List<Task> _tasks;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
-    _tasks = List.from(sampleTasks);
   }
 
   void _onTabSelected(int index) {
@@ -51,9 +50,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
 
     if (newTask != null && mounted) {
-      setState(() {
-        _tasks.insert(0, newTask);
-      });
+      context.read<TaskProvider>().addTask(newTask);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Tugas "${newTask.title}" berhasil ditambahkan!'),
@@ -83,28 +80,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _handleUpdateTask(Task updatedTask) {
-    setState(() {
-      final index = _tasks.indexWhere((t) => t.id == updatedTask.id);
-      if (index != -1) {
-        _tasks[index] = updatedTask;
-      }
-    });
+    context.read<TaskProvider>().updateTask(updatedTask);
   }
 
   @override
   Widget build(BuildContext context) {
+    final taskProvider = context.watch<TaskProvider>();
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
         children: [
           HomeScreen(
-            tasks: _tasks,
+            tasks: taskProvider.tasks,
             onNavigateToTasks: _navigateToTasks,
             onAddTask: _handleAddTask,
             onTaskTap: _handleTaskTap,
           ),
           TaskListScreen(
-            tasks: _tasks,
+            tasks: taskProvider.tasks,
+            isLoading: taskProvider.isLoading,
+            errorMessage: taskProvider.errorMessage,
+            onRetry: () => context.read<TaskProvider>().loadTasks(),
             onTaskTap: _handleTaskTap,
             onAddTask: _handleAddTask,
           ),

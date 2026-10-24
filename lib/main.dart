@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/task_provider.dart';
 import 'screens/main_navigation_screen.dart';
 
 void main() {
@@ -6,11 +8,13 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final TaskProvider? taskProvider;
+
+  const MyApp({super.key, this.taskProvider});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    final Widget app = MaterialApp(
       title: 'TaskMate',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -98,6 +102,18 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: const MainNavigationScreen(),
+    );
+
+    if (taskProvider != null) {
+      return ChangeNotifierProvider<TaskProvider>.value(
+        value: taskProvider!,
+        child: app,
+      );
+    }
+
+    return ChangeNotifierProvider<TaskProvider>(
+      create: (_) => TaskProvider()..loadTasks(),
+      child: app,
     );
   }
 }
