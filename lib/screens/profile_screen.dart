@@ -678,8 +678,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: Color(0xFF64748B),
             ),
           ),
-          const Spacer(),
-          Flexible(
+          const SizedBox(width: 12),
+          Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,

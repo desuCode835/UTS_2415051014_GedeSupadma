@@ -257,24 +257,47 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 );
               },
             )
-          : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-              itemCount: tasks.length,
-              itemBuilder: (context, index) {
-                final task = tasks[index];
-                return TaskCard(
-                  title: task['title']!,
-                  course: task['course'],
-                  deadline: task['deadline']!,
-                  priority: task['priority']!,
-                  status: task['status']!,
-                  description: task['description'],
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const TaskDetailScreen(),
-                      ),
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final int crossAxisCount;
+                if (width < 600) {
+                  crossAxisCount = 1;
+                } else if (width < 840) {
+                  crossAxisCount = 2;
+                } else {
+                  crossAxisCount = 3;
+                }
+
+                return GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                  itemCount: tasks.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
+                    mainAxisExtent: crossAxisCount == 1
+                        ? 245
+                        : (crossAxisCount == 2 ? 240 : 250),
+                  ),
+                  itemBuilder: (context, index) {
+                    final task = tasks[index];
+                    return TaskCard(
+                      title: task['title']!,
+                      course: task['course'],
+                      deadline: task['deadline']!,
+                      priority: task['priority']!,
+                      status: task['status']!,
+                      description: task['description'],
+                      margin: EdgeInsets.zero,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TaskDetailScreen(),
+                          ),
+                        );
+                      },
                     );
                   },
                 );

@@ -45,29 +45,35 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'TaskMate',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.5,
+            const Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'TaskMate',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  'Student Task Manager',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
-                    letterSpacing: -0.2,
+                  Text(
+                    'Student Task Manager',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                      letterSpacing: -0.2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -153,47 +159,54 @@ class HomeScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Text(
-                                  'Halo, Gede Supadma!',
-                                  style: TextStyle(
-                                    fontSize: 19,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.4,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Flexible(
+                                    child: Text(
+                                      'Halo, Gede Supadma!',
+                                      style: TextStyle(
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        letterSpacing: -0.4,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: const BoxDecoration(
-                                    color: Color(0x3360A5FA),
-                                    shape: BoxShape.circle,
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0x3360A5FA),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.verified_rounded,
+                                      size: 16,
+                                      color: Color(0xFF60A5FA),
+                                    ),
                                   ),
-                                  child: const Icon(
-                                    Icons.verified_rounded,
-                                    size: 16,
-                                    color: Color(0xFF60A5FA),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'NIM: 2415051014 • PTI 5A',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white.withAlpha(200),
-                                letterSpacing: -0.2,
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Text(
+                                'NIM: 2415051014 • PTI 5A',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white.withAlpha(200),
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -238,14 +251,19 @@ class HomeScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
-                                'Progres Tugas Semester Ini',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                              const Expanded(
+                                child: Text(
+                                  'Progres Tugas Semester Ini',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              const SizedBox(width: 8),
                               Text(
                                 '5/8 (62%) Selesai',
                                 style: TextStyle(
@@ -358,15 +376,20 @@ class HomeScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Ringkasan Tugas',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                      letterSpacing: -0.4,
+                  const Expanded(
+                    child: Text(
+                      'Ringkasan Tugas',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.4,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -389,15 +412,32 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Summary Cards Row
-              Row(
-                children: [
-                  Expanded(
-                    child: SummaryCard(
+              // Summary Cards (Responsive Layout)
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  final int crossAxisCount;
+                  final double mainAxisExtent;
+                  final bool isCompact = width < 600;
+
+                  if (width < 600) {
+                    crossAxisCount = 1;
+                    mainAxisExtent = 78;
+                  } else if (width < 840) {
+                    crossAxisCount = 2;
+                    mainAxisExtent = 125;
+                  } else {
+                    crossAxisCount = 3;
+                    mainAxisExtent = 125;
+                  }
+
+                  final statCards = [
+                    SummaryCard(
                       title: 'Total Tugas',
                       count: '8',
                       icon: Icons.assignment_outlined,
                       accentColor: const Color(0xFF2563EB),
+                      isHorizontal: isCompact,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -407,14 +447,12 @@ class HomeScreen extends StatelessWidget {
                         );
                       },
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: SummaryCard(
+                    SummaryCard(
                       title: 'Selesai',
                       count: '5',
                       icon: Icons.check_circle_outline_rounded,
                       accentColor: const Color(0xFF16A34A),
+                      isHorizontal: isCompact,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -424,14 +462,12 @@ class HomeScreen extends StatelessWidget {
                         );
                       },
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: SummaryCard(
+                    SummaryCard(
                       title: 'Belum Selesai',
                       count: '3',
                       icon: Icons.schedule_rounded,
                       accentColor: const Color(0xFFEA580C),
+                      isHorizontal: isCompact,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -441,8 +477,21 @@ class HomeScreen extends StatelessWidget {
                         );
                       },
                     ),
-                  ),
-                ],
+                  ];
+
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: statCards.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      mainAxisExtent: mainAxisExtent,
+                    ),
+                    itemBuilder: (context, index) => statCards[index],
+                  );
+                },
               ),
 
               const SizedBox(height: 26),
@@ -451,13 +500,17 @@ class HomeScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Tugas Mendatang',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                      letterSpacing: -0.4,
+                  const Expanded(
+                    child: Text(
+                      'Tugas Mendatang',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.4,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   InkWell(
@@ -498,55 +551,91 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Sample Task Cards
-              TaskCard(
-                title: 'Implementasi Arsitektur & UI TaskMate',
-                course: 'Pemrograman Berbasis Mobile',
-                deadline: '28 Okt 2026, 23:59',
-                priority: 'Tinggi',
-                status: 'Belum Selesai',
-                description:
-                    'Menyelesaikan struktur folder dan membangun antarmuka 6 screen awal.',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const TaskDetailScreen(),
+              // Responsive Upcoming Task Cards
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  final int crossAxisCount;
+                  if (width < 600) {
+                    crossAxisCount = 1;
+                  } else if (width < 840) {
+                    crossAxisCount = 2;
+                  } else {
+                    crossAxisCount = 3;
+                  }
+
+                  final sampleTasks = [
+                    TaskCard(
+                      title: 'Implementasi Arsitektur & UI TaskMate',
+                      course: 'Pemrograman Berbasis Mobile',
+                      deadline: '28 Okt 2026, 23:59',
+                      priority: 'Tinggi',
+                      status: 'Belum Selesai',
+                      description:
+                          'Menyelesaikan struktur folder dan membangun antarmuka 6 screen awal.',
+                      margin: crossAxisCount == 1 ? null : EdgeInsets.zero,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TaskDetailScreen(),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-              TaskCard(
-                title: 'Makalah Etika Profesi Teknologi Informasi',
-                course: 'Etika Profesi TI',
-                deadline: '30 Okt 2026, 17:00',
-                priority: 'Sedang',
-                status: 'Belum Selesai',
-                description:
-                    'Menyusun pembahasan kode etik pengembang perangkat lunak.',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const TaskDetailScreen(),
+                    TaskCard(
+                      title: 'Makalah Etika Profesi Teknologi Informasi',
+                      course: 'Etika Profesi TI',
+                      deadline: '30 Okt 2026, 17:00',
+                      priority: 'Sedang',
+                      status: 'Belum Selesai',
+                      description:
+                          'Menyusun pembahasan kode etik pengembang perangkat lunak.',
+                      margin: crossAxisCount == 1 ? null : EdgeInsets.zero,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TaskDetailScreen(),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-              TaskCard(
-                title: 'Review Jurnal Rekayasa Perangkat Lunak',
-                course: 'Rekayasa Perangkat Lunak',
-                deadline: '25 Okt 2026, 20:00',
-                priority: 'Rendah',
-                status: 'Selesai',
-                description:
-                    'Analisis metodologi Agile dalam pengembangan sistem mobile modern.',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const TaskDetailScreen(),
+                    TaskCard(
+                      title: 'Review Jurnal Rekayasa Perangkat Lunak',
+                      course: 'Rekayasa Perangkat Lunak',
+                      deadline: '25 Okt 2026, 20:00',
+                      priority: 'Rendah',
+                      status: 'Selesai',
+                      description:
+                          'Analisis metodologi Agile dalam pengembangan sistem mobile modern.',
+                      margin: crossAxisCount == 1 ? null : EdgeInsets.zero,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TaskDetailScreen(),
+                          ),
+                        );
+                      },
                     ),
+                  ];
+
+                  if (crossAxisCount == 1) {
+                    return Column(children: sampleTasks);
+                  }
+
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: sampleTasks.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 14,
+                      mainAxisSpacing: 14,
+                      mainAxisExtent: crossAxisCount == 2 ? 235 : 245,
+                    ),
+                    itemBuilder: (context, index) => sampleTasks[index],
                   );
                 },
               ),

@@ -8,6 +8,7 @@ class TaskCard extends StatelessWidget {
   final String status;
   final String? description;
   final VoidCallback? onTap;
+  final EdgeInsetsGeometry? margin;
 
   const TaskCard({
     super.key,
@@ -18,6 +19,7 @@ class TaskCard extends StatelessWidget {
     required this.status,
     this.description,
     this.onTap,
+    this.margin,
   });
 
   bool get isCompleted => status.toLowerCase() == 'selesai';
@@ -73,7 +75,7 @@ class TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: margin ?? const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -97,17 +99,22 @@ class TaskCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Top Meta: Course Pill and Status Badge
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (course != null && course!.isNotEmpty)
-                      Flexible(
-                        child: Container(
+                // Top Meta: Course Pill and Status Badge (Wrap ensures no overflow)
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      if (course != null && course!.isNotEmpty)
+                        Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 3,
@@ -129,7 +136,8 @@ class TaskCard extends StatelessWidget {
                                 color: Color(0xFF475569),
                               ),
                               const SizedBox(width: 4),
-                              Flexible(
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 160),
                                 child: Text(
                                   course!,
                                   style: const TextStyle(
@@ -145,66 +153,63 @@ class TaskCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                      )
-                    else
-                      const SizedBox.shrink(),
-                    const SizedBox(width: 8),
 
-                    // Modern Status Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isCompleted
-                            ? const Color(0xFFDCFCE7)
-                            : const Color(0xFFFFEDD5),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: isCompleted
-                              ? const Color(0xFF86EFAC)
-                              : const Color(0xFFFDBA74),
-                          width: 0.8,
+                      // Modern Status Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isCompleted
-                                ? Icons.check_circle_rounded
-                                : Icons.schedule_rounded,
-                            size: 12,
+                        decoration: BoxDecoration(
+                          color: isCompleted
+                              ? const Color(0xFFDCFCE7)
+                              : const Color(0xFFFFEDD5),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
                             color: isCompleted
-                                ? const Color(0xFF15803D)
-                                : const Color(0xFFC2410C),
+                                ? const Color(0xFF86EFAC)
+                                : const Color(0xFFFDBA74),
+                            width: 0.8,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            status,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isCompleted
+                                  ? Icons.check_circle_rounded
+                                  : Icons.schedule_rounded,
+                              size: 12,
                               color: isCompleted
                                   ? const Color(0xFF15803D)
                                   : const Color(0xFFC2410C),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              status,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isCompleted
+                                    ? const Color(0xFF15803D)
+                                    : const Color(0xFFC2410C),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 // Main Row: Completion Circle Indicator + Title & Description
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      margin: const EdgeInsets.only(top: 2, right: 12),
+                      margin: const EdgeInsets.only(top: 2, right: 10),
                       width: 20,
                       height: 20,
                       decoration: BoxDecoration(
@@ -251,7 +256,7 @@ class TaskCard extends StatelessWidget {
                           ),
                           if (description != null &&
                               description!.isNotEmpty) ...[
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 3),
                             Text(
                               description!,
                               style: const TextStyle(
@@ -270,16 +275,21 @@ class TaskCard extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 12),
-                const Divider(height: 1, color: Color(0xFFF1F5F9)),
                 const SizedBox(height: 10),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                const SizedBox(height: 8),
 
-                // Bottom Bar: Deadline & Priority Tag
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Row(
+                // Bottom Bar: Deadline & Priority Tag (Wrap ensures no overflow)
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
                             Icons.calendar_today_rounded,
@@ -287,7 +297,8 @@ class TaskCard extends StatelessWidget {
                             color: Color(0xFF64748B),
                           ),
                           const SizedBox(width: 6),
-                          Flexible(
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 160),
                             child: Text(
                               deadline,
                               style: const TextStyle(
@@ -302,42 +313,41 @@ class TaskCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getPriorityBg(),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: _getPriorityBorder(),
-                          width: 0.8,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _getPriorityIcon(),
-                            size: 12,
-                            color: _getPriorityColor(),
+                        decoration: BoxDecoration(
+                          color: _getPriorityBg(),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: _getPriorityBorder(),
+                            width: 0.8,
                           ),
-                          const SizedBox(width: 3),
-                          Text(
-                            priority,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _getPriorityIcon(),
+                              size: 12,
                               color: _getPriorityColor(),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 3),
+                            Text(
+                              priority,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: _getPriorityColor(),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

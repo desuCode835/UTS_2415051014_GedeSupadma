@@ -124,21 +124,25 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                               width: 0.8,
                             ),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.school_rounded,
                                 size: 12,
                                 color: Color(0xFF475569),
                               ),
-                              SizedBox(width: 4),
-                              Text(
-                                course,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF334155),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  course,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF334155),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -319,6 +323,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                               ],
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -485,87 +490,116 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
               const SizedBox(height: 28),
 
-              // Section: Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const EditTaskScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: const Text('Edit Tugas'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF0F172A),
-                        side: const BorderSide(
-                          color: Color(0xFFCBD5E1),
-                          width: 1.2,
+              // Section: Action Buttons (Responsive Layout)
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 340;
+
+                  Widget editButton = OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const EditTaskScreen(),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: const Text(
+                      'Edit Tugas',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF0F172A),
+                      side: const BorderSide(
+                        color: Color(0xFFCBD5E1),
+                        width: 1.2,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _isCompleted = !_isCompleted;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              _isCompleted
-                                  ? 'Tugas ditandai selesai (Demo lokal).'
-                                  : 'Tugas ditandai belum selesai (Demo lokal).',
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                  );
+
+                  Widget completeButton = ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _isCompleted = !_isCompleted;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            _isCompleted
+                                ? 'Tugas ditandai selesai (Demo lokal).'
+                                : 'Tugas ditandai belum selesai (Demo lokal).',
                           ),
-                        );
-                      },
-                      icon: Icon(
-                        _isCompleted
-                            ? Icons.undo_rounded
-                            : Icons.check_circle_rounded,
-                        size: 18,
-                      ),
-                      label: Text(
-                        _isCompleted ? 'Tandai Belum' : 'Tandai Selesai',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _isCompleted
-                            ? const Color(0xFF0F172A)
-                            : const Color(0xFF16A34A),
-                        foregroundColor: Colors.white,
-                        elevation: 2,
-                        shadowColor: const Color(0x22000000),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                        textStyle: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      );
+                    },
+                    icon: Icon(
+                      _isCompleted
+                          ? Icons.undo_rounded
+                          : Icons.check_circle_rounded,
+                      size: 18,
+                    ),
+                    label: Text(
+                      _isCompleted ? 'Tandai Belum' : 'Tandai Selesai',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isCompleted
+                          ? const Color(0xFF0F172A)
+                          : const Color(0xFF16A34A),
+                      foregroundColor: Colors.white,
+                      elevation: 2,
+                      shadowColor: const Color(0x22000000),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ),
-                ],
+                  );
+
+                  if (isNarrow) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        editButton,
+                        const SizedBox(height: 10),
+                        completeButton,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(child: editButton),
+                      const SizedBox(width: 12),
+                      Expanded(child: completeButton),
+                    ],
+                  );
+                },
               ),
 
               const SizedBox(height: 30),
