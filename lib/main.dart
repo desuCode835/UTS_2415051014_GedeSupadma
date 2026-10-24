@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/task_provider.dart';
+import 'providers/quote_provider.dart';
 import 'screens/main_navigation_screen.dart';
 
 void main() {
@@ -9,8 +10,13 @@ void main() {
 
 class MyApp extends StatelessWidget {
   final TaskProvider? taskProvider;
+  final QuoteProvider? quoteProvider;
 
-  const MyApp({super.key, this.taskProvider});
+  const MyApp({
+    super.key,
+    this.taskProvider,
+    this.quoteProvider,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -104,15 +110,25 @@ class MyApp extends StatelessWidget {
       home: const MainNavigationScreen(),
     );
 
-    if (taskProvider != null) {
-      return ChangeNotifierProvider<TaskProvider>.value(
-        value: taskProvider!,
-        child: app,
-      );
-    }
-
-    return ChangeNotifierProvider<TaskProvider>(
-      create: (_) => TaskProvider()..loadTasks(),
+    return MultiProvider(
+      providers: [
+        if (taskProvider != null)
+          ChangeNotifierProvider<TaskProvider>.value(
+            value: taskProvider!,
+          )
+        else
+          ChangeNotifierProvider<TaskProvider>(
+            create: (_) => TaskProvider()..loadTasks(),
+          ),
+        if (quoteProvider != null)
+          ChangeNotifierProvider<QuoteProvider>.value(
+            value: quoteProvider!,
+          )
+        else
+          ChangeNotifierProvider<QuoteProvider>(
+            create: (_) => QuoteProvider()..fetchQuote(),
+          ),
+      ],
       child: app,
     );
   }

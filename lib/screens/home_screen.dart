@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/task.dart';
+import '../providers/quote_provider.dart';
 import '../data/sample_tasks.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/task_card.dart';
@@ -24,6 +26,13 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    QuoteProvider? quoteProvider;
+    try {
+      quoteProvider = context.watch<QuoteProvider>();
+    } catch (_) {
+      quoteProvider = null;
+    }
+
     final taskList = tasks ?? sampleTasks;
     final totalCount = taskList.length;
     final completedCount = taskList.where((t) => t.isCompleted).length;
@@ -319,80 +328,8 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 18),
 
-              // Modern Quote Card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x060F172A),
-                      blurRadius: 10,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.format_quote_rounded,
-                          color: Color(0xFF2563EB),
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'KUTIPAN MOTIVASI',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF2563EB),
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            '“Masa depan adalah milik mereka yang percaya pada keindahan impian mereka.”',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              fontStyle: FontStyle.italic,
-                              color: Color(0xFF334155),
-                              height: 1.4,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            '— Eleanor Roosevelt',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Dynamic Motivational Quote Card
+              _buildQuoteSection(context, quoteProvider),
 
               const SizedBox(height: 24),
 
@@ -674,6 +611,302 @@ class HomeScreen extends StatelessWidget {
             letterSpacing: -0.2,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildQuoteSection(BuildContext context, QuoteProvider? quoteProvider) {
+    final quote = quoteProvider?.quote;
+    final isLoading = quoteProvider?.isLoading ?? false;
+    final errorMessage = quoteProvider?.errorMessage;
+
+    // 1. Loading state when no quote available yet
+    if (isLoading && quote == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x060F172A),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.4,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+              ),
+            ),
+            SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                'Memuat kutipan motivasi...',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 2. Error state when no quote available yet
+    if (errorMessage != null && quote == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF2F2),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFFECACA), width: 1.2),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE2E2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.error_outline_rounded,
+                  color: Color(0xFFDC2626),
+                  size: 20,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'GAGAL MEMUAT KUTIPAN',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFFDC2626),
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    errorMessage,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF991B1B),
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (quoteProvider != null)
+                    ElevatedButton.icon(
+                      onPressed: () => quoteProvider.fetchQuote(),
+                      icon: const Icon(Icons.refresh_rounded, size: 14),
+                      label: const Text('Coba Lagi'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFDC2626),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 3. Normal / Loaded quote (or default fallback for tests)
+    final displayQuote = quote?.quote ??
+        'Masa depan adalah milik mereka yang percaya pada keindahan impian mereka.';
+    final displayAuthor = quote?.author ?? 'Eleanor Roosevelt';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x060F172A),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.format_quote_rounded,
+                    color: Color(0xFF2563EB),
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'KUTIPAN MOTIVASI',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF2563EB),
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        if (quoteProvider != null)
+                          IconButton(
+                            tooltip: 'Muat Kutipan Baru',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            icon: isLoading
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xFF2563EB),
+                                      ),
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.refresh_rounded,
+                                    size: 18,
+                                    color: Color(0xFF64748B),
+                                  ),
+                            onPressed: isLoading
+                                ? null
+                                : () => quoteProvider.fetchQuote(isRefresh: true),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '“$displayQuote”',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        fontStyle: FontStyle.italic,
+                        color: Color(0xFF334155),
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '— $displayAuthor',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // If refresh failed while old quote exists, show alert notice
+          if (errorMessage != null && quote != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFECACA), width: 0.8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 14,
+                    color: Color(0xFFDC2626),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Pembaruan gagal: $errorMessage',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF991B1B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (quoteProvider != null)
+                    InkWell(
+                      onTap: () => quoteProvider.fetchQuote(isRefresh: true),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          'Coba Lagi',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFDC2626),
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
