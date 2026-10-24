@@ -1,14 +1,19 @@
 import 'package:flutter/foundation.dart';
 import '../models/task.dart';
 import '../data/sample_tasks.dart';
+import '../repositories/task_repository.dart';
 
 class TaskProvider with ChangeNotifier {
+  final TaskRepository _repository;
   List<Task> _tasks;
   bool _isLoading = false;
   String? _errorMessage;
 
-  TaskProvider({List<Task>? initialTasks})
-      : _tasks = initialTasks != null ? List.from(initialTasks) : [];
+  TaskProvider({
+    TaskRepository? repository,
+    List<Task>? initialTasks,
+  })  : _repository = repository ?? TaskRepository(),
+        _tasks = initialTasks != null ? List.from(initialTasks) : [];
 
   List<Task> get tasks => List.unmodifiable(_tasks);
   bool get isLoading => _isLoading;
@@ -24,12 +29,17 @@ class TaskProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _tasks = List.from(sampleTasks);
-      _isLoading = false;
-      notifyListeners();
+      final fetchedTasks = await _repository.getTasks();
+      _tasks = fetchedTasks;
+      _errorMessage = null;
     } catch (e) {
+      _errorMessage = 'Gagal memuat tugas dari database: $e';
+      // Pertahankan data contoh jika database belum tersedia
+      if (_tasks.isEmpty) {
+        _tasks = List.from(sampleTasks);
+      }
+    } finally {
       _isLoading = false;
-      _errorMessage = 'Gagal memuat daftar tugas: $e';
       notifyListeners();
     }
   }

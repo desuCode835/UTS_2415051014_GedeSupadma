@@ -344,6 +344,48 @@ class _TaskListScreenState extends State<TaskListScreen> {
                               Color(0xFF2563EB),
                             ),
                           ),
+                        if (widget.errorMessage != null && _allTasks.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            color: const Color(0xFFFEF2F2),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.error_outline_rounded,
+                                  size: 16,
+                                  color: Color(0xFFDC2626),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    widget.errorMessage!,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF991B1B),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (widget.onRetry != null)
+                                  InkWell(
+                                    onTap: widget.onRetry,
+                                    child: const Text(
+                                      'Coba Lagi',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFFDC2626),
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
                         Expanded(
                           child: LayoutBuilder(
                             builder: (context, constraints) {

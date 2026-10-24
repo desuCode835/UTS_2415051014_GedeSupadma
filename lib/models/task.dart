@@ -35,12 +35,13 @@ class Task {
 
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
-      id: json['id'] as String,
+      id: json['id'].toString(),
       title: json['title'] as String,
-      description: json['description'] as String,
+      description: (json['description'] ?? '') as String,
       deadline: json['deadline'] as String,
-      priority: json['priority'] as String,
-      isCompleted: json['isCompleted'] as bool,
+      priority: (json['priority'] ?? 'Sedang') as String,
+      isCompleted:
+          (json['is_completed'] ?? json['isCompleted'] ?? false) as bool,
     );
   }
 

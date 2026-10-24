@@ -1,10 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'config/supabase_config.dart';
 import 'providers/task_provider.dart';
 import 'providers/quote_provider.dart';
 import 'screens/main_navigation_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    debugPrint('Peringatan: Gagal memuat file .env: $e');
+  }
+
+  if (SupabaseConfig.isConfigured) {
+    try {
+      // ignore: deprecated_member_use
+      await Supabase.initialize(
+        url: SupabaseConfig.url,
+        // ignore: deprecated_member_use
+        anonKey: SupabaseConfig.anonKey,
+      );
+    } catch (e) {
+      debugPrint('Supabase initialization failed: $e');
+    }
+  }
+
   runApp(const MyApp());
 }
 
