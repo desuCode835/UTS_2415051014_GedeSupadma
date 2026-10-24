@@ -50,16 +50,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
 
     if (newTask != null && mounted) {
-      context.read<TaskProvider>().addTask(newTask);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Tugas "${newTask.title}" berhasil ditambahkan!'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+      final taskProvider = context.read<TaskProvider>();
+      if (!taskProvider.tasks.any((t) => t.id == newTask.id)) {
+        taskProvider.addTask(newTask);
+      }
+      setState(() {
+        _currentIndex = 1;
+      });
     }
   }
 

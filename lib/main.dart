@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/supabase_config.dart';
+import 'services/supabase_service.dart';
 import 'providers/task_provider.dart';
 import 'providers/quote_provider.dart';
 import 'screens/main_navigation_screen.dart';
@@ -24,6 +25,9 @@ void main() async {
         // ignore: deprecated_member_use
         anonKey: SupabaseConfig.anonKey,
       );
+
+      // Memastikan sesi autentikasi anonim telah siap sebelum operasi database dijalankan
+      await SupabaseService().ensureAnonymousSession();
     } catch (e) {
       debugPrint('Supabase initialization failed: $e');
     }

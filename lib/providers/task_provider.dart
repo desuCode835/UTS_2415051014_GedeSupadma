@@ -44,6 +44,41 @@ class TaskProvider with ChangeNotifier {
     }
   }
 
+  /// Menambahkan tugas baru melalui repository ke Supabase.
+  /// Mengelola status loading, error, dan menambahkan data ke daftar tugas setelah berhasil.
+  Future<Task> createTask({
+    required String title,
+    String description = '',
+    required String deadline,
+    required String priority,
+    bool isCompleted = false,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final newTask = await _repository.createTask(
+        title: title,
+        description: description,
+        deadline: deadline,
+        priority: priority,
+        isCompleted: isCompleted,
+      );
+
+      // Masukkan ke daftar hanya jika penyimpanan berhasil
+      _tasks.insert(0, newTask);
+      _errorMessage = null;
+      return newTask;
+    } catch (e) {
+      _errorMessage = 'Gagal menyimpan tugas ke database: $e';
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void addTask(Task task) {
     _tasks.insert(0, task);
     _errorMessage = null;

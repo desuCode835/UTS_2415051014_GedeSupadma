@@ -5,6 +5,7 @@ class Task {
   final String deadline;
   final String priority;
   final bool isCompleted;
+  final String? userId;
 
   const Task({
     required this.id,
@@ -13,6 +14,7 @@ class Task {
     required this.deadline,
     required this.priority,
     required this.isCompleted,
+    this.userId,
   });
 
   Task copyWith({
@@ -22,6 +24,7 @@ class Task {
     String? deadline,
     String? priority,
     bool? isCompleted,
+    String? userId,
   }) {
     return Task(
       id: id ?? this.id,
@@ -30,6 +33,7 @@ class Task {
       deadline: deadline ?? this.deadline,
       priority: priority ?? this.priority,
       isCompleted: isCompleted ?? this.isCompleted,
+      userId: userId ?? this.userId,
     );
   }
 
@@ -42,11 +46,12 @@ class Task {
       priority: (json['priority'] ?? 'Sedang') as String,
       isCompleted:
           (json['is_completed'] ?? json['isCompleted'] ?? false) as bool,
+      userId: json['user_id']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final map = <String, dynamic>{
       'id': id,
       'title': title,
       'description': description,
@@ -54,5 +59,9 @@ class Task {
       'priority': priority,
       'isCompleted': isCompleted,
     };
+    if (userId != null) {
+      map['user_id'] = userId;
+    }
+    return map;
   }
 }

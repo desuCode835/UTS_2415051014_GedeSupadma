@@ -8,11 +8,25 @@ import 'package:uts_2415051014_gedesupadma/data/sample_tasks.dart';
 class FakeSupabaseService extends SupabaseService {
   final List<Map<String, dynamic>>? mockData;
   final Exception? exceptionToThrow;
+  String? mockUserId;
+  Map<String, dynamic>? lastInsertedPayload;
 
-  FakeSupabaseService({this.mockData, this.exceptionToThrow});
+  FakeSupabaseService({
+    this.mockData,
+    this.exceptionToThrow,
+    this.mockUserId = 'fake-anon-user-uuid',
+  });
 
   @override
   bool get isInitialized => true;
+
+  @override
+  String? get currentUserId => mockUserId;
+
+  @override
+  Future<void> ensureAnonymousSession() async {
+    // Sesi anonim disimulasikan siap
+  }
 
   @override
   Future<List<Map<String, dynamic>>> getTasks() async {
@@ -21,13 +35,37 @@ class FakeSupabaseService extends SupabaseService {
     }
     return mockData ?? [];
   }
+
+  @override
+  Future<Map<String, dynamic>> insertTask(Map<String, dynamic> taskData) async {
+    if (exceptionToThrow != null) {
+      throw exceptionToThrow!;
+    }
+    final payload = Map<String, dynamic>.from(taskData);
+    final userId = currentUserId;
+    if (userId != null && userId.isNotEmpty) {
+      payload['user_id'] = userId;
+    }
+    lastInsertedPayload = payload;
+    return {
+      'id': 'd3b07384-d113-4944-9c8e-8a0b067d5c7f',
+      'created_at': '2026-10-24T12:00:00Z',
+      ...payload,
+    };
+  }
 }
 
 class FakeTaskRepository extends TaskRepository {
   final List<Task>? tasksToReturn;
   final Exception? exceptionToThrow;
+  Task? taskToReturnOnCreate;
+  Map<String, dynamic>? lastCreatedTaskArgs;
 
-  FakeTaskRepository({this.tasksToReturn, this.exceptionToThrow});
+  FakeTaskRepository({
+    this.tasksToReturn,
+    this.exceptionToThrow,
+    this.taskToReturnOnCreate,
+  });
 
   @override
   Future<List<Task>> getTasks() async {
@@ -35,6 +73,36 @@ class FakeTaskRepository extends TaskRepository {
       throw exceptionToThrow!;
     }
     return tasksToReturn ?? [];
+  }
+
+  @override
+  Future<Task> createTask({
+    required String title,
+    String description = '',
+    required String deadline,
+    required String priority,
+    bool isCompleted = false,
+  }) async {
+    if (exceptionToThrow != null) {
+      throw exceptionToThrow!;
+    }
+    lastCreatedTaskArgs = {
+      'title': title,
+      'description': description,
+      'deadline': deadline,
+      'priority': priority,
+      'isCompleted': isCompleted,
+    };
+    return taskToReturnOnCreate ??
+        Task(
+          id: 'mock-created-task-uuid',
+          title: title,
+          description: description,
+          deadline: deadline,
+          priority: priority,
+          isCompleted: isCompleted,
+          userId: 'fake-anon-user-uuid',
+        );
   }
 }
 
@@ -112,7 +180,6 @@ void main() {
     });
 
     test('TaskRepository falls back to sampleTasks if Supabase is uninitialized', () async {
-      // Default SupabaseService without client in test env has isInitialized == false
       final repository = TaskRepository(supabaseService: SupabaseService());
       final tasks = await repository.getTasks();
 
@@ -159,6 +226,109 @@ void main() {
       expect(provider.isLoading, false);
       expect(provider.errorMessage, isNotNull);
       expect(provider.errorMessage, contains('Koneksi database terputus'));
+    });
+  });
+
+  group('Tahap 10 — Task Creation and Anonymous Auth Integration Tests', () {
+    test('Task model maps userId correctly in fromJson and toJson', () {
+      final json = {
+        'id': 'uuid-task-77',
+        'title': 'Tugas Analisis Desain',
+        'description': 'Deskripsi analisis desain perangkat lunak.',
+        'deadline': '5 Nov 2026, 23:59 WITA',
+        'priority': 'Tinggi',
+        'is_completed': false,
+        'user_id': 'user-uuid-99',
+      };
+
+      final task = Task.fromJson(json);
+      expect(task.userId, 'user-uuid-99');
+
+      final serialized = task.toJson();
+      expect(serialized['user_id'], 'user-uuid-99');
+    });
+
+    test('SupabaseService.insertTask attaches current authenticated user_id automatically', () async {
+      final fakeService = FakeSupabaseService(mockUserId: 'auth-user-1234');
+      final inputData = {
+        'title': 'Tugas Baru',
+        'description': 'Deskripsi',
+        'deadline': '30 Okt 2026',
+        'priority': 'Sedang',
+        'is_completed': false,
+      };
+
+      final result = await fakeService.insertTask(inputData);
+
+      expect(result['id'], isNotNull);
+      expect(result['user_id'], 'auth-user-1234');
+      expect(fakeService.lastInsertedPayload!['user_id'], 'auth-user-1234');
+    });
+
+    test('TaskRepository.createTask sends clean payload without manual id and returns parsed Task', () async {
+      final fakeService = FakeSupabaseService(mockUserId: 'auth-user-5678');
+      final repo = TaskRepository(supabaseService: fakeService);
+
+      final createdTask = await repo.createTask(
+        title: 'Tugas Praktikum Cloud',
+        description: 'Implementasi RLS Supabase',
+        deadline: '10 Nov 2026, 23:59 WITA',
+        priority: 'Tinggi',
+      );
+
+      expect(createdTask.id, 'd3b07384-d113-4944-9c8e-8a0b067d5c7f');
+      expect(createdTask.title, 'Tugas Praktikum Cloud');
+      expect(createdTask.priority, 'Tinggi');
+      expect(createdTask.userId, 'auth-user-5678');
+      expect(createdTask.isCompleted, isFalse);
+
+      // Pastikan repo tidak mengirim id secara manual ke payload insert
+      expect(fakeService.lastInsertedPayload!.containsKey('id'), isFalse);
+    });
+
+    test('TaskProvider.createTask handles loading, error, and adds new task to start of list', () async {
+      final fakeRepo = FakeTaskRepository();
+      final provider = TaskProvider(repository: fakeRepo);
+
+      expect(provider.isLoading, false);
+      expect(provider.tasks, isEmpty);
+
+      final task = await provider.createTask(
+        title: 'Tugas State Management',
+        description: 'Menguji alur provider',
+        deadline: '12 Nov 2026',
+        priority: 'Sedang',
+      );
+
+      expect(provider.isLoading, false);
+      expect(provider.errorMessage, isNull);
+      expect(provider.tasks.length, 1);
+      expect(provider.tasks.first.title, 'Tugas State Management');
+      expect(task.title, 'Tugas State Management');
+    });
+
+    test('TaskProvider.createTask sets errorMessage and does not modify list if repository fails', () async {
+      final fakeRepo = FakeTaskRepository(
+        exceptionToThrow: Exception('new row violates row-level security policy for table "tasks"'),
+      );
+      final provider = TaskProvider(repository: fakeRepo);
+
+      expect(provider.tasks, isEmpty);
+
+      try {
+        await provider.createTask(
+          title: 'Tugas Gagal',
+          deadline: '15 Nov 2026',
+          priority: 'Rendah',
+        );
+        fail('Harus melempar exception saat repository gagal');
+      } catch (e) {
+        expect(e.toString(), contains('violates row-level security policy'));
+      }
+
+      expect(provider.isLoading, false);
+      expect(provider.tasks, isEmpty);
+      expect(provider.errorMessage, contains('violates row-level security policy'));
     });
   });
 }
