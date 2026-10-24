@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import '../models/task.dart';
+import '../data/sample_tasks.dart';
 
 class EditTaskScreen extends StatefulWidget {
-  const EditTaskScreen({super.key});
+  final TaskItem? task;
+
+  const EditTaskScreen({super.key, this.task});
 
   @override
   State<EditTaskScreen> createState() => _EditTaskScreenState();
@@ -13,26 +17,19 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   late final TextEditingController _descController;
   late final TextEditingController _deadlineController;
 
-  String _selectedPriority = 'Tinggi';
-  String _selectedStatus = 'Belum Selesai';
+  late String _selectedPriority;
+  late String _selectedStatus;
 
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(
-      text: 'Implementasi Arsitektur & UI TaskMate',
-    );
-    _courseController = TextEditingController(
-      text: 'Pemrograman Berbasis Mobile',
-    );
-    _deadlineController = TextEditingController(
-      text: '28 Okt 2026, 23:59 WITA',
-    );
-    _descController = TextEditingController(
-      text:
-          'Menyelesaikan struktur folder arsitektur aplikasi TaskMate dan membangun '
-          'tampilan 6 screen awal menggunakan Flutter Material Design dengan data contoh lokal.',
-    );
+    final task = widget.task ?? sampleTasks.first;
+    _titleController = TextEditingController(text: task.title);
+    _courseController = TextEditingController(text: task.course);
+    _deadlineController = TextEditingController(text: task.deadline);
+    _descController = TextEditingController(text: task.description);
+    _selectedPriority = task.priority;
+    _selectedStatus = task.status;
   }
 
   @override
@@ -282,17 +279,51 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 height: 52,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
-                          'Demo: Perubahan tugas berhasil disimpan secara lokal! Supabase update aktif di Tahap 4 & 5.',
+                    final title = _titleController.text.trim();
+                    final deadline = _deadlineController.text.trim();
+
+                    if (title.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Judul tugas wajib diisi!'),
+                          backgroundColor: const Color(0xFFDC2626),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                      );
+                      return;
+                    }
+
+                    if (deadline.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              const Text('Tenggat waktu (deadline) wajib diisi!'),
+                          backgroundColor: const Color(0xFFDC2626),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                      ),
+                      );
+                      return;
+                    }
+
+                    final updatedTask = TaskItem(
+                      id: widget.task?.id ?? 'task-1',
+                      title: title,
+                      course: _courseController.text.trim().isEmpty
+                          ? 'Umum'
+                          : _courseController.text.trim(),
+                      deadline: deadline,
+                      priority: _selectedPriority,
+                      status: _selectedStatus,
+                      description: _descController.text.trim(),
                     );
+
+                    Navigator.pop(context, updatedTask);
                   },
                   icon: const Icon(Icons.check_rounded, size: 20),
                   label: const Text('Simpan Perubahan'),
@@ -347,13 +378,15 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
             children: [
               Icon(icon, size: 17, color: const Color(0xFF2563EB)),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                  letterSpacing: -0.3,
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                    letterSpacing: -0.3,
+                  ),
                 ),
               ),
             ],

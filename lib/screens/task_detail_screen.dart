@@ -1,28 +1,129 @@
 import 'package:flutter/material.dart';
+import '../models/task.dart';
+import '../data/sample_tasks.dart';
 import 'edit_task_screen.dart';
 
 class TaskDetailScreen extends StatefulWidget {
-  const TaskDetailScreen({super.key});
+  final TaskItem? task;
+  final void Function(TaskItem updatedTask)? onTaskUpdated;
+
+  const TaskDetailScreen({
+    super.key,
+    this.task,
+    this.onTaskUpdated,
+  });
 
   @override
   State<TaskDetailScreen> createState() => _TaskDetailScreenState();
 }
 
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
-  bool _isCompleted = false;
+  late TaskItem _task;
+
+  @override
+  void initState() {
+    super.initState();
+    _task = widget.task ?? sampleTasks.first;
+  }
+
+  @override
+  void didUpdateWidget(covariant TaskDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.task != null && widget.task != oldWidget.task) {
+      _task = widget.task!;
+    }
+  }
+
+  Future<void> _openEditTask() async {
+    final updated = await Navigator.push<TaskItem>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditTaskScreen(task: _task),
+      ),
+    );
+
+    if (updated != null && mounted) {
+      setState(() {
+        _task = updated;
+      });
+      widget.onTaskUpdated?.call(updated);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Perubahan tugas "${updated.title}" berhasil disimpan!'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _toggleTaskStatus() {
+    final nextStatus = _task.isCompleted ? 'Belum Selesai' : 'Selesai';
+    final updated = _task.copyWith(status: nextStatus);
+    setState(() {
+      _task = updated;
+    });
+    widget.onTaskUpdated?.call(updated);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          updated.isCompleted
+              ? 'Tugas ditandai selesai.'
+              : 'Tugas ditandai belum selesai.',
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  Color _getPriorityColor(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'tinggi':
+        return const Color(0xFFDC2626);
+      case 'sedang':
+        return const Color(0xFFD97706);
+      case 'rendah':
+      default:
+        return const Color(0xFF2563EB);
+    }
+  }
+
+  Color _getPriorityBg(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'tinggi':
+        return const Color(0xFFFEF2F2);
+      case 'sedang':
+        return const Color(0xFFFFFBEB);
+      case 'rendah':
+      default:
+        return const Color(0xFFEFF6FF);
+    }
+  }
+
+  Color _getPriorityBorder(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'tinggi':
+        return const Color(0xFFFECACA);
+      case 'sedang':
+        return const Color(0xFFFDE68A);
+      case 'rendah':
+      default:
+        return const Color(0xFFBFDBFE);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    const String title = 'Implementasi Arsitektur & UI TaskMate';
-    const String course = 'Pemrograman Berbasis Mobile';
-    const String deadline = 'Rabu, 28 Oktober 2026';
-    const String deadlineTime = '23:59 WITA';
-    const String remainingTime = '3 hari lagi';
-    const String priority = 'Tinggi';
-    const String description =
-        'Menyelesaikan struktur folder arsitektur aplikasi TaskMate dan membangun tampilan 6 screen awal '
-        'menggunakan Flutter Material Design sesuai dengan pedoman pengerjaan UTS Pemrograman Mobile. '
-        'Pastikan layout responsif, tidak ada overflow, dan menggunakan data contoh lokal.';
+    final isCompleted = _task.isCompleted;
+    final priorityColor = _getPriorityColor(_task.priority);
+    final priorityBg = _getPriorityBg(_task.priority);
+    final priorityBorder = _getPriorityBorder(_task.priority);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -43,7 +144,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               size: 18,
             ),
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, _task),
         ),
         title: const Text(
           'Detail Tugas',
@@ -69,12 +170,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 size: 19,
               ),
             ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const EditTaskScreen()),
-              );
-            },
+            onPressed: _openEditTask,
           ),
           const SizedBox(width: 12),
         ],
@@ -111,43 +207,44 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         // Course Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: const Color(0xFFE2E8F0),
-                              width: 0.8,
+                        if (_task.course.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.school_rounded,
+                                  size: 12,
+                                  color: Color(0xFF475569),
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    _task.course,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF334155),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.school_rounded,
-                                size: 12,
-                                color: Color(0xFF475569),
-                              ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  course,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF334155),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
 
                         // Priority Badge
                         Container(
@@ -156,28 +253,28 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFEF2F2),
+                            color: priorityBg,
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: const Color(0xFFFECACA),
+                              color: priorityBorder,
                               width: 0.8,
                             ),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.arrow_upward_rounded,
+                                Icons.flag_rounded,
                                 size: 12,
-                                color: Color(0xFFDC2626),
+                                color: priorityColor,
                               ),
-                              SizedBox(width: 3),
+                              const SizedBox(width: 3),
                               Text(
-                                priority,
+                                _task.priority,
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFFDC2626),
+                                  color: priorityColor,
                                 ),
                               ),
                             ],
@@ -191,12 +288,12 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: _isCompleted
+                            color: isCompleted
                                 ? const Color(0xFFDCFCE7)
                                 : const Color(0xFFFFEDD5),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: _isCompleted
+                              color: isCompleted
                                   ? const Color(0xFF86EFAC)
                                   : const Color(0xFFFDBA74),
                               width: 0.8,
@@ -206,21 +303,21 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                _isCompleted
+                                isCompleted
                                     ? Icons.check_circle_rounded
                                     : Icons.schedule_rounded,
                                 size: 12,
-                                color: _isCompleted
+                                color: isCompleted
                                     ? const Color(0xFF15803D)
                                     : const Color(0xFFC2410C),
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                _isCompleted ? 'Selesai' : 'Belum Selesai',
+                                isCompleted ? 'Selesai' : 'Belum Selesai',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: _isCompleted
+                                  color: isCompleted
                                       ? const Color(0xFF15803D)
                                       : const Color(0xFFC2410C),
                                 ),
@@ -235,14 +332,14 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
                     // Task Title
                     Text(
-                      title,
+                      _task.title,
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF0F172A),
                         height: 1.3,
                         letterSpacing: -0.4,
-                        decoration: _isCompleted
+                        decoration: isCompleted
                             ? TextDecoration.lineThrough
                             : TextDecoration.none,
                       ),
@@ -313,7 +410,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '$deadline, $deadlineTime',
+                                  _task.deadline,
                                   style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
@@ -321,25 +418,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                   ),
                                 ),
                               ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEF2F2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              remainingTime,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFFDC2626),
-                              ),
                             ),
                           ),
                         ],
@@ -356,21 +434,21 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFEF2F2),
+                              color: priorityBg,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.flag_rounded,
-                              color: Color(0xFFDC2626),
+                              color: priorityColor,
                               size: 19,
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'Tingkat Prioritas',
                                   style: TextStyle(
                                     fontSize: 11,
@@ -378,13 +456,13 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                     color: Color(0xFF64748B),
                                   ),
                                 ),
-                                SizedBox(height: 2),
+                                const SizedBox(height: 2),
                                 Text(
-                                  'Prioritas Tinggi (Mendesak)',
+                                  'Prioritas ${_task.priority}',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFFDC2626),
+                                    color: priorityColor,
                                   ),
                                 ),
                               ],
@@ -404,16 +482,16 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              color: _isCompleted
+                              color: isCompleted
                                   ? const Color(0xFFDCFCE7)
                                   : const Color(0xFFFFEDD5),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
-                              _isCompleted
+                              isCompleted
                                   ? Icons.check_circle_rounded
                                   : Icons.schedule_rounded,
-                              color: _isCompleted
+                              color: isCompleted
                                   ? const Color(0xFF16A34A)
                                   : const Color(0xFFEA580C),
                               size: 19,
@@ -434,13 +512,13 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  _isCompleted
+                                  isCompleted
                                       ? 'Selesai Dikerjakan'
                                       : 'Belum Selesai (Dalam Proses)',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: _isCompleted
+                                    color: isCompleted
                                         ? const Color(0xFF16A34A)
                                         : const Color(0xFFEA580C),
                                   ),
@@ -477,9 +555,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
                 ),
-                child: const Text(
-                  description,
-                  style: TextStyle(
+                child: Text(
+                  _task.description.isEmpty
+                      ? 'Tidak ada rincian atau catatan khusus untuk tugas ini.'
+                      : _task.description,
+                  style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF334155),
                     height: 1.6,
@@ -496,14 +576,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   final isNarrow = constraints.maxWidth < 340;
 
                   Widget editButton = OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const EditTaskScreen(),
-                        ),
-                      );
-                    },
+                    onPressed: _openEditTask,
                     icon: const Icon(Icons.edit_outlined, size: 18),
                     label: const Text(
                       'Edit Tugas',
@@ -531,37 +604,20 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   );
 
                   Widget completeButton = ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _isCompleted = !_isCompleted;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            _isCompleted
-                                ? 'Tugas ditandai selesai (Demo lokal).'
-                                : 'Tugas ditandai belum selesai (Demo lokal).',
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: _toggleTaskStatus,
                     icon: Icon(
-                      _isCompleted
+                      isCompleted
                           ? Icons.undo_rounded
                           : Icons.check_circle_rounded,
                       size: 18,
                     ),
                     label: Text(
-                      _isCompleted ? 'Tandai Belum' : 'Tandai Selesai',
+                      isCompleted ? 'Tandai Belum' : 'Tandai Selesai',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _isCompleted
+                      backgroundColor: isCompleted
                           ? const Color(0xFF0F172A)
                           : const Color(0xFF16A34A),
                       foregroundColor: Colors.white,

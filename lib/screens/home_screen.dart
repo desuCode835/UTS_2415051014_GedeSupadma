@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../models/task.dart';
+import '../data/sample_tasks.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/task_card.dart';
 import 'task_list_screen.dart';
@@ -7,10 +9,28 @@ import 'add_task_screen.dart';
 import 'profile_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final List<TaskItem>? tasks;
+  final VoidCallback? onNavigateToTasks;
+  final VoidCallback? onAddTask;
+  final void Function(TaskItem task)? onTaskTap;
+
+  const HomeScreen({
+    super.key,
+    this.tasks,
+    this.onNavigateToTasks,
+    this.onAddTask,
+    this.onTaskTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final taskList = tasks ?? sampleTasks;
+    final totalCount = taskList.length;
+    final completedCount = taskList.where((t) => t.isCompleted).length;
+    final pendingCount = totalCount - completedCount;
+    final double progressFraction =
+        totalCount > 0 ? (completedCount / totalCount) : 0.0;
+    final int progressPercent = (progressFraction * 100).round();
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -93,10 +113,14 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const TaskListScreen()),
-              );
+              if (onNavigateToTasks != null) {
+                onNavigateToTasks!();
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => TaskListScreen(tasks: tasks)),
+                );
+              }
             },
           ),
           IconButton(
@@ -265,7 +289,7 @@ class HomeScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                '5/8 (62%) Selesai',
+                                '$completedCount/$totalCount ($progressPercent%) Selesai',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
@@ -278,7 +302,7 @@ class HomeScreen extends StatelessWidget {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(6),
                             child: LinearProgressIndicator(
-                              value: 5 / 8,
+                              value: progressFraction,
                               minHeight: 6,
                               backgroundColor: Colors.white.withAlpha(40),
                               valueColor: const AlwaysStoppedAnimation<Color>(
@@ -434,47 +458,59 @@ class HomeScreen extends StatelessWidget {
                   final statCards = [
                     SummaryCard(
                       title: 'Total Tugas',
-                      count: '8',
+                      count: '$totalCount',
                       icon: Icons.assignment_outlined,
                       accentColor: const Color(0xFF2563EB),
                       isHorizontal: isCompact,
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TaskListScreen(),
-                          ),
-                        );
+                        if (onNavigateToTasks != null) {
+                          onNavigateToTasks!();
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TaskListScreen(tasks: tasks),
+                            ),
+                          );
+                        }
                       },
                     ),
                     SummaryCard(
                       title: 'Selesai',
-                      count: '5',
+                      count: '$completedCount',
                       icon: Icons.check_circle_outline_rounded,
                       accentColor: const Color(0xFF16A34A),
                       isHorizontal: isCompact,
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TaskListScreen(),
-                          ),
-                        );
+                        if (onNavigateToTasks != null) {
+                          onNavigateToTasks!();
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TaskListScreen(tasks: tasks),
+                            ),
+                          );
+                        }
                       },
                     ),
                     SummaryCard(
                       title: 'Belum Selesai',
-                      count: '3',
+                      count: '$pendingCount',
                       icon: Icons.schedule_rounded,
                       accentColor: const Color(0xFFEA580C),
                       isHorizontal: isCompact,
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TaskListScreen(),
-                          ),
-                        );
+                        if (onNavigateToTasks != null) {
+                          onNavigateToTasks!();
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TaskListScreen(tasks: tasks),
+                            ),
+                          );
+                        }
                       },
                     ),
                   ];
@@ -515,12 +551,16 @@ class HomeScreen extends StatelessWidget {
                   ),
                   InkWell(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const TaskListScreen(),
-                        ),
-                      );
+                      if (onNavigateToTasks != null) {
+                        onNavigateToTasks!();
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TaskListScreen(tasks: tasks),
+                          ),
+                        );
+                      }
                     },
                     borderRadius: BorderRadius.circular(8),
                     child: const Padding(
@@ -564,78 +604,46 @@ class HomeScreen extends StatelessWidget {
                     crossAxisCount = 3;
                   }
 
-                  final sampleTasks = [
-                    TaskCard(
-                      title: 'Implementasi Arsitektur & UI TaskMate',
-                      course: 'Pemrograman Berbasis Mobile',
-                      deadline: '28 Okt 2026, 23:59',
-                      priority: 'Tinggi',
-                      status: 'Belum Selesai',
+                  final upcomingCards = taskList.take(3).map((task) {
+                    return TaskCard(
+                      title: task.title,
+                      course: task.course.isEmpty ? null : task.course,
+                      deadline: task.deadline,
+                      priority: task.priority,
+                      status: task.status,
                       description:
-                          'Menyelesaikan struktur folder dan membangun antarmuka 6 screen awal.',
+                          task.description.isEmpty ? null : task.description,
                       margin: crossAxisCount == 1 ? null : EdgeInsets.zero,
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TaskDetailScreen(),
-                          ),
-                        );
+                        if (onTaskTap != null) {
+                          onTaskTap!(task);
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TaskDetailScreen(task: task),
+                            ),
+                          );
+                        }
                       },
-                    ),
-                    TaskCard(
-                      title: 'Makalah Etika Profesi Teknologi Informasi',
-                      course: 'Etika Profesi TI',
-                      deadline: '30 Okt 2026, 17:00',
-                      priority: 'Sedang',
-                      status: 'Belum Selesai',
-                      description:
-                          'Menyusun pembahasan kode etik pengembang perangkat lunak.',
-                      margin: crossAxisCount == 1 ? null : EdgeInsets.zero,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TaskDetailScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    TaskCard(
-                      title: 'Review Jurnal Rekayasa Perangkat Lunak',
-                      course: 'Rekayasa Perangkat Lunak',
-                      deadline: '25 Okt 2026, 20:00',
-                      priority: 'Rendah',
-                      status: 'Selesai',
-                      description:
-                          'Analisis metodologi Agile dalam pengembangan sistem mobile modern.',
-                      margin: crossAxisCount == 1 ? null : EdgeInsets.zero,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TaskDetailScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ];
+                    );
+                  }).toList();
 
                   if (crossAxisCount == 1) {
-                    return Column(children: sampleTasks);
+                    return Column(children: upcomingCards);
                   }
 
                   return GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: sampleTasks.length,
+                    itemCount: upcomingCards.length,
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: crossAxisCount,
                       crossAxisSpacing: 14,
                       mainAxisSpacing: 14,
                       mainAxisExtent: crossAxisCount == 2 ? 235 : 245,
                     ),
-                    itemBuilder: (context, index) => sampleTasks[index],
+                    itemBuilder: (context, index) => upcomingCards[index],
                   );
                 },
               ),
@@ -644,11 +652,16 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'home_add_task_fab',
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AddTaskScreen()),
-          );
+          if (onAddTask != null) {
+            onAddTask!();
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddTaskScreen()),
+            );
+          }
         },
         backgroundColor: const Color(0xFF0F172A),
         foregroundColor: Colors.white,

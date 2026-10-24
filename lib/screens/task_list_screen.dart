@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
+import '../models/task.dart';
+import '../data/sample_tasks.dart';
 import '../widgets/task_card.dart';
 import '../widgets/empty_state.dart';
 import 'task_detail_screen.dart';
 import 'add_task_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
-  const TaskListScreen({super.key});
+  final List<TaskItem>? tasks;
+  final void Function(TaskItem task)? onTaskTap;
+  final VoidCallback? onAddTask;
+
+  const TaskListScreen({
+    super.key,
+    this.tasks,
+    this.onTaskTap,
+    this.onAddTask,
+  });
 
   @override
   State<TaskListScreen> createState() => _TaskListScreenState();
@@ -15,54 +26,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   String _selectedFilter = 'Semua';
   final TextEditingController _searchController = TextEditingController();
 
-  // Sample local tasks data
-  final List<Map<String, String>> _allTasks = [
-    {
-      'title': 'Implementasi Arsitektur & UI TaskMate',
-      'course': 'Pemrograman Berbasis Mobile',
-      'deadline': '28 Okt 2026, 23:59',
-      'priority': 'Tinggi',
-      'status': 'Belum Selesai',
-      'description':
-          'Menyelesaikan struktur folder dan membangun antarmuka 6 screen awal.',
-    },
-    {
-      'title': 'Makalah Etika Profesi Teknologi Informasi',
-      'course': 'Etika Profesi TI',
-      'deadline': '30 Okt 2026, 17:00',
-      'priority': 'Sedang',
-      'status': 'Belum Selesai',
-      'description':
-          'Menyusun pembahasan kode etik pengembang perangkat lunak.',
-    },
-    {
-      'title': 'Proyek Akhir Kecerdasan Buatan',
-      'course': 'Kecerdasan Buatan',
-      'deadline': '5 Nov 2026, 23:59',
-      'priority': 'Tinggi',
-      'status': 'Belum Selesai',
-      'description':
-          'Membuat model klasifikasi machine learning dengan dataset evaluasi performa.',
-    },
-    {
-      'title': 'Review Jurnal Rekayasa Perangkat Lunak',
-      'course': 'Rekayasa Perangkat Lunak',
-      'deadline': '25 Okt 2026, 20:00',
-      'priority': 'Rendah',
-      'status': 'Selesai',
-      'description':
-          'Analisis metodologi Agile dalam pengembangan sistem mobile modern.',
-    },
-    {
-      'title': 'Desain Wireframe Sistem Informasi Akademik',
-      'course': 'Interaksi Manusia dan Komputer',
-      'deadline': '24 Okt 2026, 15:00',
-      'priority': 'Sedang',
-      'status': 'Selesai',
-      'description':
-          'Membuat prototipe tampilan antarmuka berpusat pada pengalaman pengguna.',
-    },
-  ];
+  List<TaskItem> get _allTasks => widget.tasks ?? sampleTasks;
 
   @override
   void dispose() {
@@ -70,14 +34,14 @@ class _TaskListScreenState extends State<TaskListScreen> {
     super.dispose();
   }
 
-  List<Map<String, String>> get _filteredTasks {
-    List<Map<String, String>> list;
+  List<TaskItem> get _filteredTasks {
+    List<TaskItem> list;
     if (_selectedFilter == 'Semua') {
       list = _allTasks;
     } else if (_selectedFilter == 'Belum Selesai') {
-      list = _allTasks.where((t) => t['status'] == 'Belum Selesai').toList();
+      list = _allTasks.where((t) => !t.isCompleted).toList();
     } else if (_selectedFilter == 'Selesai') {
-      list = _allTasks.where((t) => t['status'] == 'Selesai').toList();
+      list = _allTasks.where((t) => t.isCompleted).toList();
     } else {
       // 'Arsip' filter is empty to demonstrate EmptyState
       return [];
@@ -86,8 +50,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isNotEmpty) {
       list = list.where((t) {
-        final title = t['title']?.toLowerCase() ?? '';
-        final course = t['course']?.toLowerCase() ?? '';
+        final title = t.title.toLowerCase();
+        final course = t.course.toLowerCase();
         return title.contains(query) || course.contains(query);
       }).toList();
     }
@@ -95,9 +59,34 @@ class _TaskListScreenState extends State<TaskListScreen> {
     return list;
   }
 
+  void _openAddTask() {
+    if (widget.onAddTask != null) {
+      widget.onAddTask!();
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AddTaskScreen()),
+      );
+    }
+  }
+
+  void _handleTaskItemTap(TaskItem task) {
+    if (widget.onTaskTap != null) {
+      widget.onTaskTap!(task);
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TaskDetailScreen(task: task),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tasks = _filteredTasks;
+    final all = _allTasks;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -105,21 +94,23 @@ class _TaskListScreenState extends State<TaskListScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              color: Color(0xFF0F172A),
-              size: 18,
-            ),
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Color(0xFF0F172A),
+                    size: 18,
+                  ),
+                ),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         title: const Text(
           'Daftar Tugas',
           style: TextStyle(
@@ -144,12 +135,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 size: 20,
               ),
             ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AddTaskScreen()),
-              );
-            },
+            onPressed: _openAddTask,
           ),
           const SizedBox(width: 12),
         ],
@@ -217,16 +203,16 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
-                    _buildFilterChip('Semua', _allTasks.length),
+                    _buildFilterChip('Semua', all.length),
                     const SizedBox(width: 8),
                     _buildFilterChip(
                       'Belum Selesai',
-                      _allTasks.where((t) => t['status'] == 'Belum Selesai').length,
+                      all.where((t) => !t.isCompleted).length,
                     ),
                     const SizedBox(width: 8),
                     _buildFilterChip(
                       'Selesai',
-                      _allTasks.where((t) => t['status'] == 'Selesai').length,
+                      all.where((t) => t.isCompleted).length,
                     ),
                     const SizedBox(width: 8),
                     _buildFilterChip('Arsip', 0),
@@ -250,12 +236,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   ? 'Tugas kuliah yang Anda selesaikan dan arsipkan akan muncul di folder arsip ini.'
                   : 'Tidak ada tugas yang cocok dengan kata kunci atau filter yang Anda pilih.',
               actionLabel: 'Tambah Tugas Baru',
-              onAction: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AddTaskScreen()),
-                );
-              },
+              onAction: _openAddTask,
             )
           : LayoutBuilder(
               builder: (context, constraints) {
@@ -283,33 +264,23 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   itemBuilder: (context, index) {
                     final task = tasks[index];
                     return TaskCard(
-                      title: task['title']!,
-                      course: task['course'],
-                      deadline: task['deadline']!,
-                      priority: task['priority']!,
-                      status: task['status']!,
-                      description: task['description'],
+                      title: task.title,
+                      course: task.course.isEmpty ? null : task.course,
+                      deadline: task.deadline,
+                      priority: task.priority,
+                      status: task.status,
+                      description:
+                          task.description.isEmpty ? null : task.description,
                       margin: EdgeInsets.zero,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TaskDetailScreen(),
-                          ),
-                        );
-                      },
+                      onTap: () => _handleTaskItemTap(task),
                     );
                   },
                 );
               },
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AddTaskScreen()),
-          );
-        },
+        heroTag: 'task_list_add_task_fab',
+        onPressed: _openAddTask,
         backgroundColor: const Color(0xFF0F172A),
         foregroundColor: Colors.white,
         elevation: 4,

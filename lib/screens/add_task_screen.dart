@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/task.dart';
 
 class AddTaskScreen extends StatefulWidget {
   const AddTaskScreen({super.key});
@@ -305,17 +306,53 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 height: 52,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
-                          'Demo: Tugas berhasil dibuat secara lokal! Validasi & database aktif di Tahap 4 & 5.',
+                    final title = _titleController.text.trim();
+                    final deadline = _deadlineController.text.trim();
+
+                    if (title.isEmpty) {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Judul tugas wajib diisi!'),
+                          backgroundColor: const Color(0xFFDC2626),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                      );
+                      return;
+                    }
+
+                    if (deadline.isEmpty) {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              const Text('Tenggat waktu (deadline) wajib diisi!'),
+                          backgroundColor: const Color(0xFFDC2626),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                      ),
+                      );
+                      return;
+                    }
+
+                    final newTask = TaskItem(
+                      id: 'task_${DateTime.now().millisecondsSinceEpoch}',
+                      title: title,
+                      course: _courseController.text.trim().isEmpty
+                          ? 'Umum'
+                          : _courseController.text.trim(),
+                      deadline: deadline,
+                      priority: _selectedPriority,
+                      status: _selectedStatus,
+                      description: _descController.text.trim(),
                     );
+
+                    Navigator.pop(context, newTask);
                   },
                   icon: const Icon(Icons.check_rounded, size: 20),
                   label: const Text('Simpan Tugas Baru'),
