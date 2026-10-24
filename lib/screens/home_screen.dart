@@ -9,10 +9,10 @@ import 'add_task_screen.dart';
 import 'profile_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  final List<TaskItem>? tasks;
+  final List<Task>? tasks;
   final VoidCallback? onNavigateToTasks;
   final VoidCallback? onAddTask;
-  final void Function(TaskItem task)? onTaskTap;
+  final void Function(Task task)? onTaskTap;
 
   const HomeScreen({
     super.key,
@@ -607,10 +607,9 @@ class HomeScreen extends StatelessWidget {
                   final upcomingCards = taskList.take(3).map((task) {
                     return TaskCard(
                       title: task.title,
-                      course: task.course.isEmpty ? null : task.course,
                       deadline: task.deadline,
                       priority: task.priority,
-                      status: task.status,
+                      status: task.isCompleted ? 'Selesai' : 'Belum Selesai',
                       description:
                           task.description.isEmpty ? null : task.description,
                       margin: crossAxisCount == 1 ? null : EdgeInsets.zero,

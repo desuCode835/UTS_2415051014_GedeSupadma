@@ -7,8 +7,8 @@ import 'task_detail_screen.dart';
 import 'add_task_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
-  final List<TaskItem>? tasks;
-  final void Function(TaskItem task)? onTaskTap;
+  final List<Task>? tasks;
+  final void Function(Task task)? onTaskTap;
   final VoidCallback? onAddTask;
 
   const TaskListScreen({
@@ -26,7 +26,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   String _selectedFilter = 'Semua';
   final TextEditingController _searchController = TextEditingController();
 
-  List<TaskItem> get _allTasks => widget.tasks ?? sampleTasks;
+  List<Task> get _allTasks => widget.tasks ?? sampleTasks;
 
   @override
   void dispose() {
@@ -34,8 +34,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
     super.dispose();
   }
 
-  List<TaskItem> get _filteredTasks {
-    List<TaskItem> list;
+  List<Task> get _filteredTasks {
+    List<Task> list;
     if (_selectedFilter == 'Semua') {
       list = _allTasks;
     } else if (_selectedFilter == 'Belum Selesai') {
@@ -51,8 +51,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
     if (query.isNotEmpty) {
       list = list.where((t) {
         final title = t.title.toLowerCase();
-        final course = t.course.toLowerCase();
-        return title.contains(query) || course.contains(query);
+        final desc = t.description.toLowerCase();
+        return title.contains(query) || desc.contains(query);
       }).toList();
     }
 
@@ -70,7 +70,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     }
   }
 
-  void _handleTaskItemTap(TaskItem task) {
+  void _handleTaskTap(Task task) {
     if (widget.onTaskTap != null) {
       widget.onTaskTap!(task);
     } else {
@@ -265,14 +265,13 @@ class _TaskListScreenState extends State<TaskListScreen> {
                     final task = tasks[index];
                     return TaskCard(
                       title: task.title,
-                      course: task.course.isEmpty ? null : task.course,
                       deadline: task.deadline,
                       priority: task.priority,
-                      status: task.status,
+                      status: task.isCompleted ? 'Selesai' : 'Belum Selesai',
                       description:
                           task.description.isEmpty ? null : task.description,
                       margin: EdgeInsets.zero,
-                      onTap: () => _handleTaskItemTap(task),
+                      onTap: () => _handleTaskTap(task),
                     );
                   },
                 );

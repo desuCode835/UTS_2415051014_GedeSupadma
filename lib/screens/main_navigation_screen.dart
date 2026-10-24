@@ -21,7 +21,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
-  late List<TaskItem> _tasks;
+  late List<Task> _tasks;
 
   @override
   void initState() {
@@ -45,7 +45,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   Future<void> _handleAddTask() async {
-    final TaskItem? newTask = await Navigator.push<TaskItem>(
+    final Task? newTask = await Navigator.push<Task>(
       context,
       MaterialPageRoute(builder: (_) => const AddTaskScreen()),
     );
@@ -66,8 +66,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
-  Future<void> _handleTaskTap(TaskItem task) async {
-    final TaskItem? updatedTask = await Navigator.push<TaskItem>(
+  Future<void> _handleTaskTap(Task task) async {
+    final Task? updatedTask = await Navigator.push<Task>(
       context,
       MaterialPageRoute(
         builder: (_) => TaskDetailScreen(
@@ -82,7 +82,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
-  void _handleUpdateTask(TaskItem updatedTask) {
+  void _handleUpdateTask(Task updatedTask) {
     setState(() {
       final index = _tasks.indexWhere((t) => t.id == updatedTask.id);
       if (index != -1) {

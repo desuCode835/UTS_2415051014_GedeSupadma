@@ -4,8 +4,8 @@ import '../data/sample_tasks.dart';
 import 'edit_task_screen.dart';
 
 class TaskDetailScreen extends StatefulWidget {
-  final TaskItem? task;
-  final void Function(TaskItem updatedTask)? onTaskUpdated;
+  final Task? task;
+  final void Function(Task updatedTask)? onTaskUpdated;
 
   const TaskDetailScreen({
     super.key,
@@ -18,7 +18,7 @@ class TaskDetailScreen extends StatefulWidget {
 }
 
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
-  late TaskItem _task;
+  late Task _task;
 
   @override
   void initState() {
@@ -35,7 +35,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   }
 
   Future<void> _openEditTask() async {
-    final updated = await Navigator.push<TaskItem>(
+    final updated = await Navigator.push<Task>(
       context,
       MaterialPageRoute(
         builder: (_) => EditTaskScreen(task: _task),
@@ -60,8 +60,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   }
 
   void _toggleTaskStatus() {
-    final nextStatus = _task.isCompleted ? 'Belum Selesai' : 'Selesai';
-    final updated = _task.copyWith(status: nextStatus);
+    final updated = _task.copyWith(isCompleted: !_task.isCompleted);
     setState(() {
       _task = updated;
     });
@@ -206,46 +205,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       runSpacing: 8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        // Course Badge
-                        if (_task.course.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: const Color(0xFFE2E8F0),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.school_rounded,
-                                  size: 12,
-                                  color: Color(0xFF475569),
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    _task.course,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF334155),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
                         // Priority Badge
                         Container(
                           padding: const EdgeInsets.symmetric(

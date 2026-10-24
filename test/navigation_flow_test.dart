@@ -57,14 +57,13 @@ void main() {
         MaterialApp(
           home: TaskListScreen(
             tasks: const [
-              TaskItem(
+              Task(
                 id: 'custom-1',
                 title: 'Tugas Khusus Mobile',
-                course: 'Pemrograman Mobile',
+                description: 'Deskripsi tugas khusus untuk pengujian navigasi.',
                 deadline: '29 Okt 2026, 12:00 WITA',
                 priority: 'Tinggi',
-                status: 'Belum Selesai',
-                description: 'Deskripsi tugas khusus untuk pengujian navigasi.',
+                isCompleted: false,
               ),
             ],
           ),
@@ -94,14 +93,13 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
-      const task = TaskItem(
+      const task = Task(
         id: 'edit-test-1',
         title: 'Tugas Lama Sebelum Diedit',
-        course: 'Jaringan Komputer',
+        description: 'Deskripsi lama.',
         deadline: '1 Nov 2026, 10:00 WITA',
         priority: 'Sedang',
-        status: 'Belum Selesai',
-        description: 'Deskripsi lama.',
+        isCompleted: false,
       );
 
       await tester.pumpWidget(
@@ -117,7 +115,6 @@ void main() {
 
       expect(find.byType(EditTaskScreen), findsOneWidget);
       expect(find.text('Tugas Lama Sebelum Diedit'), findsOneWidget);
-      expect(find.text('Jaringan Komputer'), findsOneWidget);
       expect(find.text('1 Nov 2026, 10:00 WITA'), findsOneWidget);
       expect(find.text('Deskripsi lama.'), findsOneWidget);
     });
@@ -128,14 +125,14 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
-      TaskItem? updatedResult;
-      const initialTask = TaskItem(
+      Task? updatedResult;
+      const initialTask = Task(
         id: 'unique-id-99',
         title: 'Judul Asli',
-        course: 'Sistem Operasi',
+        description: '',
         deadline: '2 Nov 2026, 18:00 WITA',
         priority: 'Sedang',
-        status: 'Belum Selesai',
+        isCompleted: false,
       );
 
       await tester.pumpWidget(

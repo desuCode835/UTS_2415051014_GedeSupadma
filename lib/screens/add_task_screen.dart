@@ -340,16 +340,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                       return;
                     }
 
-                    final newTask = TaskItem(
+                    final newTask = Task(
                       id: 'task_${DateTime.now().millisecondsSinceEpoch}',
                       title: title,
-                      course: _courseController.text.trim().isEmpty
-                          ? 'Umum'
-                          : _courseController.text.trim(),
+                      description: _descController.text.trim(),
                       deadline: deadline,
                       priority: _selectedPriority,
-                      status: _selectedStatus,
-                      description: _descController.text.trim(),
+                      isCompleted: _selectedStatus.toLowerCase() == 'selesai',
                     );
 
                     Navigator.pop(context, newTask);

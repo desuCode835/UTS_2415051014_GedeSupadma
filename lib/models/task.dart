@@ -1,67 +1,57 @@
-class TaskItem {
+class Task {
   final String id;
   final String title;
-  final String course;
+  final String description;
   final String deadline;
   final String priority;
-  final String status;
-  final String description;
+  final bool isCompleted;
 
-  const TaskItem({
+  const Task({
     required this.id,
     required this.title,
-    this.course = '',
+    required this.description,
     required this.deadline,
-    this.priority = 'Sedang',
-    this.status = 'Belum Selesai',
-    this.description = '',
+    required this.priority,
+    required this.isCompleted,
   });
 
-  bool get isCompleted => status.toLowerCase() == 'selesai';
-
-  TaskItem copyWith({
+  Task copyWith({
     String? id,
     String? title,
-    String? course,
+    String? description,
     String? deadline,
     String? priority,
-    String? status,
-    String? description,
+    bool? isCompleted,
   }) {
-    return TaskItem(
+    return Task(
       id: id ?? this.id,
       title: title ?? this.title,
-      course: course ?? this.course,
+      description: description ?? this.description,
       deadline: deadline ?? this.deadline,
       priority: priority ?? this.priority,
-      status: status ?? this.status,
-      description: description ?? this.description,
+      isCompleted: isCompleted ?? this.isCompleted,
     );
   }
 
-  Map<String, dynamic> toMap() {
+  factory Task.fromJson(Map<String, dynamic> json) {
+    return Task(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      deadline: json['deadline'] as String,
+      priority: json['priority'] as String,
+      isCompleted: json['isCompleted'] as bool,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'title': title,
-      'course': course,
+      'description': description,
       'deadline': deadline,
       'priority': priority,
-      'status': status,
-      'description': description,
+      'isCompleted': isCompleted,
     };
   }
-
-  factory TaskItem.fromMap(Map<String, dynamic> map) {
-    return TaskItem(
-      id: map['id'] as String? ?? '',
-      title: map['title'] as String? ?? '',
-      course: map['course'] as String? ?? '',
-      deadline: map['deadline'] as String? ?? '',
-      priority: map['priority'] as String? ?? 'Sedang',
-      status: map['status'] as String? ?? 'Belum Selesai',
-      description: map['description'] as String? ?? '',
-    );
-  }
 }
-
-typedef Task = TaskItem;

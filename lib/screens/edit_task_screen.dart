@@ -3,7 +3,7 @@ import '../models/task.dart';
 import '../data/sample_tasks.dart';
 
 class EditTaskScreen extends StatefulWidget {
-  final TaskItem? task;
+  final Task? task;
 
   const EditTaskScreen({super.key, this.task});
 
@@ -25,11 +25,11 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     super.initState();
     final task = widget.task ?? sampleTasks.first;
     _titleController = TextEditingController(text: task.title);
-    _courseController = TextEditingController(text: task.course);
+    _courseController = TextEditingController();
     _deadlineController = TextEditingController(text: task.deadline);
     _descController = TextEditingController(text: task.description);
     _selectedPriority = task.priority;
-    _selectedStatus = task.status;
+    _selectedStatus = task.isCompleted ? 'Selesai' : 'Belum Selesai';
   }
 
   @override
@@ -311,16 +311,13 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                       return;
                     }
 
-                    final updatedTask = TaskItem(
+                    final updatedTask = Task(
                       id: widget.task?.id ?? 'task-1',
                       title: title,
-                      course: _courseController.text.trim().isEmpty
-                          ? 'Umum'
-                          : _courseController.text.trim(),
+                      description: _descController.text.trim(),
                       deadline: deadline,
                       priority: _selectedPriority,
-                      status: _selectedStatus,
-                      description: _descController.text.trim(),
+                      isCompleted: _selectedStatus.toLowerCase() == 'selesai',
                     );
 
                     Navigator.pop(context, updatedTask);
