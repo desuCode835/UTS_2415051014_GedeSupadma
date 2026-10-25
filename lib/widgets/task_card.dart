@@ -9,6 +9,8 @@ class TaskCard extends StatelessWidget {
   final String? description;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry? margin;
+  final VoidCallback? onToggleCompletion;
+  final bool isToggling;
 
   const TaskCard({
     super.key,
@@ -20,6 +22,8 @@ class TaskCard extends StatelessWidget {
     this.description,
     this.onTap,
     this.margin,
+    this.onToggleCompletion,
+    this.isToggling = false,
   });
 
   bool get isCompleted => status.toLowerCase() == 'selesai';
@@ -208,29 +212,50 @@ class TaskCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 2, right: 10),
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isCompleted
-                            ? const Color(0xFF16A34A)
-                            : Colors.transparent,
-                        border: Border.all(
-                          color: isCompleted
-                              ? const Color(0xFF16A34A)
-                              : const Color(0xFF94A3B8),
-                          width: 1.8,
+                    GestureDetector(
+                      onTap: (isToggling || onToggleCompletion == null)
+                          ? null
+                          : onToggleCompletion,
+                      behavior: HitTestBehavior.opaque,
+                      child: Tooltip(
+                        message: isCompleted
+                            ? 'Tandai belum selesai'
+                            : 'Tandai selesai',
+                        child: Container(
+                          margin: const EdgeInsets.only(top: 2, right: 10),
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isCompleted
+                                ? const Color(0xFF16A34A)
+                                : Colors.transparent,
+                            border: Border.all(
+                              color: isCompleted
+                                  ? const Color(0xFF16A34A)
+                                  : const Color(0xFF94A3B8),
+                              width: 1.8,
+                            ),
+                          ),
+                          child: isToggling
+                              ? const Padding(
+                                  padding: EdgeInsets.all(3),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Color(0xFF16A34A),
+                                    ),
+                                  ),
+                                )
+                              : (isCompleted
+                                  ? const Icon(
+                                      Icons.check_rounded,
+                                      size: 14,
+                                      color: Colors.white,
+                                    )
+                                  : null),
                         ),
                       ),
-                      child: isCompleted
-                          ? const Icon(
-                              Icons.check_rounded,
-                              size: 13,
-                              color: Colors.white,
-                            )
-                          : null,
                     ),
                     Expanded(
                       child: Column(

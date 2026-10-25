@@ -99,6 +99,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             isLoading: taskProvider.isLoading,
             errorMessage: taskProvider.errorMessage,
             onRetry: () => context.read<TaskProvider>().loadTasks(),
+            onRefresh: () => context.read<TaskProvider>().loadTasks(),
             onTaskTap: _handleTaskTap,
             onAddTask: _handleAddTask,
           ),
