@@ -70,6 +70,11 @@ class MockTaskRepositoryForCourse extends TaskRepository {
     }
     return task;
   }
+
+  @override
+  Future<void> deleteTask(String id) async {
+    storedTasks.removeWhere((t) => t.id == id);
+  }
 }
 
 void main() {

@@ -87,6 +87,24 @@ class FakeSupabaseService extends SupabaseService {
     };
   }
 
+  String? lastDeletedId;
+
+  @override
+  Future<void> deleteTask(String id) async {
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+    lastDeletedId = id;
+    if (mockData != null) {
+      final index = mockData!.indexWhere((m) => m['id'] == id);
+      if (index == -1) {
+        throw Exception(
+          'Gagal menghapus tugas: Data tidak ditemukan atau operasi ditolak oleh database (RLS). '
+          'Pastikan policy DELETE pada tabel "tasks" di Supabase telah diizinkan untuk akun pengguna ini.',
+        );
+      }
+      mockData!.removeAt(index);
+    }
+  }
+
   @override
   Future<Map<String, dynamic>?> getProfile(String userId) async {
     if (exceptionToThrow != null) throw exceptionToThrow!;
@@ -183,6 +201,19 @@ class FakeTaskRepository extends TaskRepository {
     }
     lastUpdatedTask = task;
     return task;
+  }
+
+  String? lastDeletedTaskId;
+
+  @override
+  Future<void> deleteTask(String id) async {
+    if (exceptionToThrow != null) {
+      throw exceptionToThrow!;
+    }
+    lastDeletedTaskId = id;
+    if (tasksToReturn != null) {
+      tasksToReturn!.removeWhere((t) => t.id == id);
+    }
   }
 }
 
@@ -597,6 +628,26 @@ void main() {
 
         expect(failingProvider.tasks.first.isCompleted, isFalse);
         expect(failingProvider.errorMessage, contains('RLS update denied'));
+      });
+
+      test('TaskRepository.deleteTask executes delete on SupabaseService with correct ID', () async {
+        final fakeService = FakeSupabaseService(
+          mockData: [
+            {
+              'id': 'task-delete-id-123',
+              'title': 'Tugas Uji Delete Supabase',
+              'deadline': '1 Des 2026',
+              'priority': 'Tinggi',
+              'is_completed': false,
+            }
+          ],
+        );
+        final repo = TaskRepository(supabaseService: fakeService);
+
+        await repo.deleteTask('task-delete-id-123');
+
+        expect(fakeService.lastDeletedId, 'task-delete-id-123');
+        expect(fakeService.mockData!.isEmpty, isTrue);
       });
     });
 

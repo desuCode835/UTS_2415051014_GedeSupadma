@@ -254,6 +254,71 @@ class SupabaseService {
     return updateTask(id, {'is_archived': isArchived});
   }
 
+  /// Menghapus tugas dari tabel 'tasks' di Supabase berdasarkan primary key (id).
+  /// Menggunakan filter .eq('id', id) agar hanya tugas yang dipilih yang dihapus.
+  /// Memastikan sesi autentikasi pengguna aktif untuk mematuhi RLS.
+  Future<void> deleteTask(String id) async {
+    try {
+      if (id.trim().isEmpty) {
+        throw ArgumentError('ID tugas tidak boleh kosong untuk operasi delete.');
+      }
+
+      if (clientInstance.auth.currentUser == null) {
+        debugPrint(
+          '[SupabaseService] currentUser null sebelum delete, mencoba ensureAnonymousSession()...',
+        );
+        await ensureAnonymousSession();
+      }
+
+      final auth = clientInstance.auth;
+      final session = auth.currentSession;
+      final user = auth.currentUser;
+      final hasAccessToken =
+          session?.accessToken != null && session!.accessToken.isNotEmpty;
+
+      debugPrint('[SupabaseService] Diagnostic pre-delete:');
+      debugPrint('  - isInitialized: $isInitialized');
+      debugPrint('  - target task id to delete: $id');
+      debugPrint('  - user ID: ${user?.id ?? "null"}');
+      debugPrint('  - is anonymous: ${user?.isAnonymous ?? false}');
+
+      if (user == null || session == null || !hasAccessToken) {
+        throw const AuthException(
+          'Gagal menghapus tugas: Sesi autentikasi Supabase tidak ditemukan (user/session null). '
+          'Pastikan sesi aktif tersedia sebelum melakukan delete.',
+        );
+      }
+
+      // Menjalankan query DELETE pada tabel 'tasks' dengan filter ID spesifik.
+      // Chaining .select() memastikan PostgREST mengembalikan record yang benar-benar terhapus.
+      final List<dynamic> response = await clientInstance
+          .from('tasks')
+          .delete()
+          .eq('id', id)
+          .select();
+
+      debugPrint('[SupabaseService] deleteTask response count: ${response.length}');
+
+      // Jika response kosong, PostgREST tidak menghapus record apapun (karena ID tidak ada atau RLS menolak)
+      if (response.isEmpty) {
+        debugPrint(
+          '[SupabaseService] deleteTask gagal: 0 record terhapus untuk task ID: $id. '
+          'Penyebab potensial: ID tidak ditemukan, record milik akun lain, atau RLS DELETE policy pada tabel "tasks" '
+          'belum mengizinkan user ID: ${user.id}.',
+        );
+        throw Exception(
+          'Gagal menghapus tugas: Data tidak ditemukan atau operasi ditolak oleh database (RLS). '
+          'Pastikan policy DELETE pada tabel "tasks" di Supabase telah diizinkan untuk akun pengguna ini.',
+        );
+      }
+
+      debugPrint('[SupabaseService] deleteTask sukses untuk task ID: $id (${response.length} record terhapus)');
+    } catch (e) {
+      debugPrint('[SupabaseService] deleteTask error: $e');
+      rethrow;
+    }
+  }
+
   /// Mengambil data profil pengguna dari tabel 'profiles' di Supabase
   Future<Map<String, dynamic>?> getProfile(String userId) async {
     try {

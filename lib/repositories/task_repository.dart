@@ -150,6 +150,23 @@ class TaskRepository {
     final toggled = task.copyWith(isArchived: !task.isArchived);
     return updateTask(toggled);
   }
+
+  /// Menghapus tugas dari database Supabase berdasarkan primary key (id).
+  /// Menggunakan filter spesifik ID agar hanya tugas yang dipilih yang dihapus.
+  /// Bila Supabase belum diinisialisasi (misal saat testing offline),
+  /// operasi diselesaikan secara lokal tanpa error.
+  Future<void> deleteTask(String id) async {
+    try {
+      if (!_supabaseService.isInitialized) {
+        return;
+      }
+
+      await _supabaseService.ensureAnonymousSession();
+      await _supabaseService.deleteTask(id);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 

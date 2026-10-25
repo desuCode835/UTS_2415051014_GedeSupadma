@@ -206,6 +206,29 @@ class TaskProvider with ChangeNotifier {
     }
   }
 
+  /// Menghapus tugas dari database Supabase melalui repository,
+  /// dan memperbarui daftar tugas lokal hanya jika operasi database berhasil.
+  /// Jika database gagal, tugas tetap dipertahankan di dalam state dan error disimpan.
+  Future<void> deleteTask(String id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.deleteTask(id);
+
+      // Hanya hapus dari daftar lokal jika repository berhasil
+      _tasks.removeWhere((t) => t.id == id);
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = 'Gagal menghapus tugas dari database: $e';
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void updateTask(Task updatedTask) {
     final index = _tasks.indexWhere((t) => t.id == updatedTask.id);
     if (index != -1) {
