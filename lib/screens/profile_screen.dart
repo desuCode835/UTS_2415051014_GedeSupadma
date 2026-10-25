@@ -1,19 +1,218 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import '../models/user_profile.dart';
+import '../providers/task_provider.dart';
+import '../providers/profile_provider.dart';
+import '../services/supabase_service.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final UserProfile? profile;
+
+  const ProfileScreen({super.key, this.profile});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Local profile photo state (stored locally in memory / widget state)
-  String _currentPhotoType = 'initials'; // 'initials', 'gallery', 'camera', 'preset'
-  IconData _presetIcon = Icons.school_rounded;
-  Color _presetBgColor = const Color(0xFF2563EB);
+  UserProfile? _localProfile;
 
-  void _showImageUploadOptions(BuildContext context) {
+  /// Resolusi data profil secara dinamis:
+  /// 1. Gunakan _localProfile jika baru saja diubah di layar ini.
+  /// 2. Gunakan widget.profile jika disediakan secara eksplisit (misal test).
+  /// 3. Gunakan ProfileProvider jika terdaftar di BuildContext.
+  /// 4. Gunakan metadata autentikasi Supabase jika sesi aktif tersedia.
+  /// 5. Fallback ke profil baku mahasiswa (UserProfile.defaultStudent).
+  UserProfile _resolveProfile(BuildContext context) {
+    if (_localProfile != null) {
+      return _localProfile!;
+    }
+    if (widget.profile != null) {
+      return widget.profile!;
+    }
+
+    try {
+      final provider = Provider.of<ProfileProvider>(context);
+      return provider.profile;
+    } catch (_) {}
+
+    try {
+      final supabaseService = SupabaseService();
+      if (supabaseService.isInitialized) {
+        final client = supabaseService.clientInstance;
+        final user = client.auth.currentUser;
+        if (user != null) {
+          final metadata = user.userMetadata;
+          if (metadata != null &&
+              (metadata.containsKey('name') ||
+                  metadata.containsKey('student_id') ||
+                  metadata.containsKey('nim'))) {
+            return UserProfile.fromAnonymousUser(
+              userId: user.id,
+              metadata: metadata,
+            ).copyWith(
+              photoUrl: metadata['photo_url'] as String?,
+            );
+          }
+          return UserProfile.defaultStudent.copyWith(
+            id: user.id,
+            isAnonymous: user.isAnonymous,
+          );
+        }
+      }
+    } catch (_) {}
+
+    return UserProfile.defaultStudent;
+  }
+
+  Future<void> _openEditProfile(UserProfile profile) async {
+    final updated = await Navigator.push<UserProfile>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(profile: profile),
+      ),
+    );
+
+    if (updated != null && mounted) {
+      setState(() {
+        _localProfile = updated;
+      });
+    }
+  }
+
+  Future<void> _pickAndUploadPhoto(
+    ImageSource source,
+    UserProfile profile,
+  ) async {
+    try {
+      final picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (pickedFile == null || !mounted) return;
+
+      final bytes = await pickedFile.readAsBytes();
+      final nameParts = pickedFile.name.split('.');
+      final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(width: 12),
+              Text('Mengunggah foto profil ke Supabase Storage...'),
+            ],
+          ),
+          duration: Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      ProfileProvider? provider;
+      try {
+        if (!mounted) return;
+        provider = Provider.of<ProfileProvider>(context, listen: false);
+      } catch (_) {}
+
+      final updated = provider != null
+          ? await provider.updateProfile(
+              name: profile.name,
+              studentId: profile.studentId,
+              className: profile.className,
+              studyProgram: profile.studyProgram,
+              university: profile.university,
+              newPhotoBytes: bytes,
+              fileExtension: ext,
+            )
+          : profile;
+
+      if (mounted) {
+        setState(() {
+          _localProfile = updated;
+        });
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foto profil berhasil diperbarui.'),
+            backgroundColor: Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui foto profil: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _removePhoto(UserProfile profile) async {
+    try {
+      ProfileProvider? provider;
+      try {
+        provider = Provider.of<ProfileProvider>(context, listen: false);
+      } catch (_) {}
+
+      final updated = provider != null
+          ? await provider.updateProfile(
+              name: profile.name,
+              studentId: profile.studentId,
+              className: profile.className,
+              studyProgram: profile.studyProgram,
+              university: profile.university,
+              clearPhoto: true,
+            )
+          : profile.copyWith(photoUrl: null);
+
+      if (mounted) {
+        setState(() {
+          _localProfile = updated;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foto profil berhasil dihapus.'),
+            backgroundColor: Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menghapus foto profil: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showImageUploadOptions(BuildContext context, UserProfile profile) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -21,6 +220,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
+        final hasPhoto = profile.photoUrl != null && profile.photoUrl!.isNotEmpty;
+
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -50,14 +251,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Pilih sumber gambar untuk profil Anda (tersimpan secara lokal)',
+                  'Foto disimpan secara permanen di Supabase Storage',
                   style: TextStyle(
                     fontSize: 12,
                     color: Color(0xFF64748B),
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Option 1: Gallery
+                // Opsi 1: Galeri
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(10),
@@ -72,7 +273,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   title: const Text(
-                    'Pilih dari Galeri Foto (Lokal)',
+                    'Pilih dari Galeri Foto',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -80,30 +281,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   subtitle: const Text(
-                    'Unggah gambar foto dari penyimpanan lokal',
+                    'Pilih foto dari penyimpanan perangkat',
                     style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
-                    setState(() {
-                      _currentPhotoType = 'gallery';
-                      _presetIcon = Icons.account_box_rounded;
-                      _presetBgColor = const Color(0xFF0284C7);
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
-                          'Foto profil dari galeri berhasil diunggah dan disimpan secara lokal.',
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    );
+                    _pickAndUploadPhoto(ImageSource.gallery, profile);
                   },
                 ),
-                // Option 2: Camera
+                // Opsi 2: Kamera
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(10),
@@ -118,7 +304,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   title: const Text(
-                    'Ambil Foto Kamera (Lokal)',
+                    'Ambil Foto Kamera',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -126,30 +312,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   subtitle: const Text(
-                    'Gunakan kamera untuk mengambil foto profil baru',
+                    'Ambil foto baru menggunakan kamera perangkat',
                     style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
-                    setState(() {
-                      _currentPhotoType = 'camera';
-                      _presetIcon = Icons.face_rounded;
-                      _presetBgColor = const Color(0xFF059669);
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
-                          'Foto profil kamera berhasil disimpan secara lokal.',
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    );
+                    _pickAndUploadPhoto(ImageSource.camera, profile);
                   },
                 ),
-                // Option 3: Character Avatar
+                // Opsi 3: Buka Halaman Edit Profil Lengkap
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(10),
@@ -158,13 +329,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
-                      Icons.sentiment_satisfied_alt_rounded,
+                      Icons.edit_note_rounded,
                       color: Color(0xFF7C3AED),
                       size: 20,
                     ),
                   ),
                   title: const Text(
-                    'Gunakan Avatar Mahasiswa',
+                    'Formulir Edit Profil Lengkap',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -172,57 +343,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   subtitle: const Text(
-                    'Pilih ikon ilustrasi mahasiswa teknik informatika',
+                    'Ubah nama, NIM, dan foto profil sekaligus',
                     style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
-                    setState(() {
-                      _currentPhotoType = 'preset';
-                      _presetIcon = Icons.terminal_rounded;
-                      _presetBgColor = const Color(0xFF7C3AED);
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
-                          'Avatar mahasiswa berhasil diterapkan secara lokal.',
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    );
+                    _openEditProfile(profile);
                   },
                 ),
-                // Option 4: Reset to Monogram
-                if (_currentPhotoType != 'initials')
+                // Opsi 4: Hapus Foto Profil jika ada
+                if (hasPhoto)
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
+                        color: const Color(0xFFFEF2F2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
-                        Icons.refresh_rounded,
-                        color: Color(0xFF475569),
+                        Icons.delete_outline_rounded,
+                        color: Color(0xFFDC2626),
                         size: 20,
                       ),
                     ),
                     title: const Text(
-                      'Kembalikan ke Inisial Nama (GS)',
+                      'Hapus Foto Profil',
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF334155),
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFDC2626),
                       ),
+                    ),
+                    subtitle: Text(
+                      'Kembalikan ke inisial nama (${profile.initials})',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                     ),
                     onTap: () {
                       Navigator.pop(ctx);
-                      setState(() {
-                        _currentPhotoType = 'initials';
-                      });
+                      _removePhoto(profile);
                     },
                   ),
                 const SizedBox(height: 8),
@@ -234,32 +392,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildAvatarWidget() {
-    if (_currentPhotoType == 'initials') {
-      return const Center(
-        child: Text(
-          'GS',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            letterSpacing: 1,
-          ),
-        ),
-      );
-    } else {
-      return Center(
-        child: Icon(
-          _presetIcon,
-          size: 42,
-          color: Colors.white,
+  Widget _buildAvatarWidget(UserProfile profile) {
+    if (profile.photoUrl != null && profile.photoUrl!.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          profile.photoUrl!,
+          width: 84,
+          height: 84,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Center(
+              child: Text(
+                profile.initials,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: 1,
+                ),
+              ),
+            );
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+            );
+          },
         ),
       );
     }
+
+    return Center(
+      child: Text(
+        profile.initials,
+        style: const TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+          letterSpacing: 1,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final profile = _resolveProfile(context);
+
+    // Ambil data statistik dari TaskProvider jika tersedia di context
+    int totalTasks = 8;
+    int completedTasks = 5;
+    try {
+      final taskProvider = Provider.of<TaskProvider>(context);
+      totalTasks = taskProvider.totalTasks;
+      completedTasks = taskProvider.completedTasks;
+    } catch (_) {}
+
+    final progressPercent =
+        totalTasks > 0 ? ((completedTasks / totalTasks) * 100).round() : 0;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -292,13 +491,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
             letterSpacing: -0.4,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Edit Profil',
+            icon: Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.edit_rounded,
+                color: Color(0xFF2563EB),
+                size: 18,
+              ),
+            ),
+            onPressed: () => _openEditProfile(profile),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
           child: Column(
             children: [
-              // Modern Hero Profile Card
+              // Hero Profile Card
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(22),
@@ -323,9 +541,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Avatar with upload/camera badge
+                    // Avatar dengan tombol ganti foto
                     GestureDetector(
-                      onTap: () => _showImageUploadOptions(context),
+                      onTap: () => _showImageUploadOptions(context, profile),
                       child: Stack(
                         alignment: Alignment.bottomRight,
                         children: [
@@ -336,7 +554,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 3),
-                              gradient: _currentPhotoType == 'initials'
+                              gradient: profile.photoUrl == null ||
+                                      profile.photoUrl!.isEmpty
                                   ? const LinearGradient(
                                       colors: [
                                         Color(0xFF3B82F6),
@@ -346,9 +565,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       end: Alignment.bottomRight,
                                     )
                                   : null,
-                              color: _currentPhotoType != 'initials'
-                                  ? _presetBgColor
-                                  : null,
+                              color: const Color(0xFF1D4ED8),
                               boxShadow: const [
                                 BoxShadow(
                                   color: Color(0x33000000),
@@ -357,9 +574,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ],
                             ),
-                            child: _buildAvatarWidget(),
+                            child: _buildAvatarWidget(profile),
                           ),
-                          // Camera edit badge
+                          // Badge ikon kamera
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
@@ -385,9 +602,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Tap to upload button / label
+                    // Tombol ganti foto profil
                     InkWell(
-                      onTap: () => _showImageUploadOptions(context),
+                      onTap: () => _showImageUploadOptions(context, profile),
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -429,19 +646,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Name
-                    const Text(
-                      'Gede Supadma',
-                      style: TextStyle(
+                    // Nama Mahasiswa (Dinamis)
+                    Text(
+                      profile.name,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                         letterSpacing: -0.4,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 4),
 
-                    // NIM & Class Pill
+                    // NIM & Kelas Pill (Dinamis)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -455,19 +673,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           width: 0.8,
                         ),
                       ),
-                      child: const Text(
-                        'NIM: 2415051014 • PTI 5A',
-                        style: TextStyle(
+                      child: Text(
+                        'NIM: ${profile.studentId} • ${profile.className}',
+                        style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
 
                     const SizedBox(height: 18),
 
-                    // Quick Stats Row inside Hero Card
+                    // Quick Stats Row
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -483,20 +702,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: Row(
                         children: [
-                          Expanded(child: _buildQuickStat('8', 'Total Tugas')),
+                          Expanded(
+                            child: _buildQuickStat(
+                              '$totalTasks',
+                              'Total Tugas',
+                            ),
+                          ),
                           Container(
                             height: 24,
                             width: 1,
                             color: Colors.white.withAlpha(40),
                           ),
-                          Expanded(child: _buildQuickStat('5', 'Selesai')),
+                          Expanded(
+                            child: _buildQuickStat(
+                              '$completedTasks',
+                              'Selesai',
+                            ),
+                          ),
                           Container(
                             height: 24,
                             width: 1,
                             color: Colors.white.withAlpha(40),
                           ),
-                          Expanded(child: _buildQuickStat('62%', 'Progres')),
+                          Expanded(
+                            child: _buildQuickStat(
+                              '$progressPercent%',
+                              'Progres',
+                            ),
+                          ),
                         ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Tombol Edit Profil
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        key: const Key('btn_edit_profile'),
+                        onPressed: () => _openEditProfile(profile),
+                        icon: const Icon(
+                          Icons.edit_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          'Edit Profil',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: Colors.white.withAlpha(80),
+                            width: 1.2,
+                          ),
+                          backgroundColor: Colors.white.withAlpha(25),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 11,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -505,7 +777,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 20),
 
-              // Section: Academic Details
+              // Section: Academic Details (Dinamis & Terstruktur, Teks Kanan)
               _buildModernSection(
                 title: 'Informasi Akademik',
                 children: [
@@ -513,35 +785,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.badge_outlined,
                     iconColor: const Color(0xFF2563EB),
                     label: 'NIM',
-                    value: '2415051014',
+                    value: profile.studentId,
                   ),
                   const Divider(height: 1, color: Color(0xFFF1F5F9)),
                   _buildListTile(
                     icon: Icons.groups_outlined,
                     iconColor: const Color(0xFF7C3AED),
                     label: 'Kelas',
-                    value: 'PTI 5A',
+                    value: profile.className,
                   ),
                   const Divider(height: 1, color: Color(0xFFF1F5F9)),
                   _buildListTile(
                     icon: Icons.school_outlined,
                     iconColor: const Color(0xFF059669),
                     label: 'Program Studi',
-                    value: 'Pendidikan Teknik Informatika',
+                    value: profile.studyProgram,
                   ),
                   const Divider(height: 1, color: Color(0xFFF1F5F9)),
                   _buildListTile(
                     icon: Icons.account_balance_outlined,
                     iconColor: const Color(0xFFD97706),
                     label: 'Perguruan Tinggi',
-                    value: 'Universitas Pendidikan Ganesha',
+                    value: profile.university,
                   ),
                 ],
               ),
 
               const SizedBox(height: 20),
 
-              // Section: App Details
+              // Section: Tentang Aplikasi
               _buildModernSection(
                 title: 'Tentang Aplikasi',
                 children: [
@@ -552,12 +824,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     value: 'TaskMate',
                   ),
                   const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
+                  const Padding(
+                    padding: EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Ringkasan Aplikasi',
                           style: TextStyle(
                             fontSize: 12,
@@ -565,8 +837,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             color: Color(0xFF64748B),
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        const Text(
+                        SizedBox(height: 6),
+                        Text(
                           'TaskMate adalah aplikasi manajemen tugas kuliah yang dirancang khusus '
                           'untuk membantu mahasiswa mengorganisir jadwal, tingkat prioritas, '
                           'dan tenggat waktu pengerjaan tugas secara efisien, terstruktur, '
@@ -663,6 +935,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 34,
@@ -673,9 +946,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             child: Icon(icon, size: 18, color: iconColor),
           ),
-          const SizedBox(width: 8),
-          Flexible(
-            flex: 2,
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 4,
             child: Text(
               label,
               style: const TextStyle(
@@ -689,20 +962,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(width: 8),
           Expanded(
-            flex: 3,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
+            flex: 6,
+            child: Align(
               alignment: Alignment.centerRight,
-              child: Text(
-                value,
-                textAlign: TextAlign.right,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
-                  letterSpacing: -0.2,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  value,
+                  textAlign: TextAlign.right,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                    letterSpacing: -0.2,
+                  ),
                 ),
               ),
             ),

@@ -5,6 +5,7 @@ import '../widgets/task_card.dart';
 import '../widgets/empty_state.dart';
 import 'task_detail_screen.dart';
 import 'add_task_screen.dart';
+import 'archive_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
   final List<Task>? tasks;
@@ -43,14 +44,14 @@ class _TaskListScreenState extends State<TaskListScreen> {
   List<Task> get _filteredTasks {
     List<Task> list;
     if (_selectedFilter == 'Semua') {
-      list = _allTasks;
+      list = _allTasks.where((t) => !t.isArchived).toList();
     } else if (_selectedFilter == 'Belum Selesai') {
-      list = _allTasks.where((t) => !t.isCompleted).toList();
+      list = _allTasks.where((t) => !t.isArchived && !t.isCompleted).toList();
     } else if (_selectedFilter == 'Selesai') {
-      list = _allTasks.where((t) => t.isCompleted).toList();
+      list = _allTasks.where((t) => !t.isArchived && t.isCompleted).toList();
     } else {
-      // 'Arsip' filter is empty to demonstrate EmptyState
-      return [];
+      // 'Arsip' filter
+      list = _allTasks.where((t) => t.isArchived).toList();
     }
 
     final query = _searchController.text.trim().toLowerCase();
@@ -58,7 +59,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
       list = list.where((t) {
         final title = t.title.toLowerCase();
         final desc = t.description.toLowerCase();
-        return title.contains(query) || desc.contains(query);
+        final course = (t.courseCategory ?? '').toLowerCase();
+        return title.contains(query) ||
+            desc.contains(query) ||
+            course.contains(query);
       }).toList();
     }
 
@@ -127,6 +131,27 @@ class _TaskListScreenState extends State<TaskListScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Halaman Arsip',
+            icon: Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.archive_outlined,
+                color: Color(0xFF334155),
+                size: 20,
+              ),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ArchiveScreen()),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Tambah Tugas',
             icon: Container(
@@ -209,19 +234,25 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
-                    _buildFilterChip('Semua', all.length),
+                    _buildFilterChip(
+                      'Semua',
+                      all.where((t) => !t.isArchived).length,
+                    ),
                     const SizedBox(width: 8),
                     _buildFilterChip(
                       'Belum Selesai',
-                      all.where((t) => !t.isCompleted).length,
+                      all.where((t) => !t.isArchived && !t.isCompleted).length,
                     ),
                     const SizedBox(width: 8),
                     _buildFilterChip(
                       'Selesai',
-                      all.where((t) => t.isCompleted).length,
+                      all.where((t) => !t.isArchived && t.isCompleted).length,
                     ),
                     const SizedBox(width: 8),
-                    _buildFilterChip('Arsip', 0),
+                    _buildFilterChip(
+                      'Arsip',
+                      all.where((t) => t.isArchived).length,
+                    ),
                   ],
                 ),
               ),
@@ -316,23 +347,34 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 )
               : tasks.isEmpty
                   ? EmptyState(
-                      icon: _allTasks.isEmpty
-                          ? Icons.task_outlined
-                          : (_selectedFilter == 'Arsip'
-                              ? Icons.archive_outlined
+                      icon: _selectedFilter == 'Arsip'
+                          ? Icons.archive_outlined
+                          : (_allTasks.where((t) => !t.isArchived).isEmpty
+                              ? Icons.task_outlined
                               : Icons.search_off_rounded),
-                      title: _allTasks.isEmpty
-                          ? 'Belum Ada Tugas'
-                          : (_selectedFilter == 'Arsip'
-                              ? 'Belum Ada Tugas Terarsip'
+                      title: _selectedFilter == 'Arsip'
+                          ? 'Belum Ada Tugas Terarsip'
+                          : (_allTasks.where((t) => !t.isArchived).isEmpty
+                              ? 'Belum Ada Tugas'
                               : 'Tugas Tidak Ditemukan'),
-                      message: _allTasks.isEmpty
-                          ? 'Belum ada tugas kuliah yang tersimpan. Ketuk tombol di bawah untuk menambahkan tugas baru.'
-                          : (_selectedFilter == 'Arsip'
-                              ? 'Tugas kuliah yang Anda selesaikan dan arsipkan akan muncul di folder arsip ini.'
+                      message: _selectedFilter == 'Arsip'
+                          ? 'Tugas kuliah yang Anda arsipkan akan muncul di folder arsip ini.'
+                          : (_allTasks.where((t) => !t.isArchived).isEmpty
+                              ? 'Belum ada tugas kuliah yang tersimpan. Ketuk tombol di bawah untuk menambahkan tugas baru.'
                               : 'Tidak ada tugas yang cocok dengan kata kunci atau filter yang Anda pilih.'),
-                      actionLabel: 'Tambah Tugas Baru',
-                      onAction: _openAddTask,
+                      actionLabel: _selectedFilter == 'Arsip'
+                          ? 'Buka Halaman Arsip'
+                          : 'Tambah Tugas Baru',
+                      onAction: _selectedFilter == 'Arsip'
+                          ? () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ArchiveScreen(),
+                                ),
+                              );
+                            }
+                          : _openAddTask,
                     )
                   : Column(
                       children: [
@@ -416,6 +458,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                                   final task = tasks[index];
                                   return TaskCard(
                                     title: task.title,
+                                    course: task.courseCategory,
                                     deadline: task.deadline,
                                     priority: task.priority,
                                     status: task.isCompleted
@@ -448,6 +491,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   Widget _buildFilterChip(String label, int count) {
     final isSelected = _selectedFilter == label;
     return GestureDetector(
+      key: ValueKey('filter_chip_$label'),
       onTap: () {
         setState(() {
           _selectedFilter = label;

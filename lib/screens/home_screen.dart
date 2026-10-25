@@ -9,6 +9,7 @@ import 'task_list_screen.dart';
 import 'task_detail_screen.dart';
 import 'add_task_screen.dart';
 import 'profile_screen.dart';
+import 'archive_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final List<Task>? tasks;
@@ -33,7 +34,8 @@ class HomeScreen extends StatelessWidget {
       quoteProvider = null;
     }
 
-    final taskList = tasks ?? sampleTasks;
+    final taskList =
+        (tasks ?? sampleTasks).where((t) => !t.isArchived).toList();
     final totalCount = taskList.length;
     final completedCount = taskList.where((t) => t.isCompleted).length;
     final pendingCount = totalCount - completedCount;
@@ -107,6 +109,27 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Halaman Arsip',
+            icon: Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.archive_outlined,
+                color: Color(0xFF334155),
+                size: 19,
+              ),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ArchiveScreen()),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Daftar Tugas',
             icon: Container(
@@ -544,6 +567,7 @@ class HomeScreen extends StatelessWidget {
                   final upcomingCards = taskList.take(3).map((task) {
                     return TaskCard(
                       title: task.title,
+                      course: task.courseCategory,
                       deadline: task.deadline,
                       priority: task.priority,
                       status: task.isCompleted ? 'Selesai' : 'Belum Selesai',

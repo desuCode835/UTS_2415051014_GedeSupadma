@@ -6,6 +6,7 @@ import 'config/supabase_config.dart';
 import 'services/supabase_service.dart';
 import 'providers/task_provider.dart';
 import 'providers/quote_provider.dart';
+import 'providers/profile_provider.dart';
 import 'screens/main_navigation_screen.dart';
 
 void main() async {
@@ -39,11 +40,13 @@ void main() async {
 class MyApp extends StatelessWidget {
   final TaskProvider? taskProvider;
   final QuoteProvider? quoteProvider;
+  final ProfileProvider? profileProvider;
 
   const MyApp({
     super.key,
     this.taskProvider,
     this.quoteProvider,
+    this.profileProvider,
   });
 
   @override
@@ -155,6 +158,14 @@ class MyApp extends StatelessWidget {
         else
           ChangeNotifierProvider<QuoteProvider>(
             create: (_) => QuoteProvider()..fetchQuote(),
+          ),
+        if (profileProvider != null)
+          ChangeNotifierProvider<ProfileProvider>.value(
+            value: profileProvider!,
+          )
+        else
+          ChangeNotifierProvider<ProfileProvider>(
+            create: (_) => ProfileProvider()..loadProfile(),
           ),
       ],
       child: app,

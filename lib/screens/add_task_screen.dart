@@ -24,10 +24,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   static const List<String> _validPriorities = ['Rendah', 'Sedang', 'Tinggi'];
 
   final List<String> _courseSuggestions = [
-    'Pemrograman Mobile',
-    'Kecerdasan Buatan',
-    'Rekayasa Web',
-    'Etika Profesi',
+    'Pemrograman Mobile - Tugas',
+    'Basis Data - Praktikum',
+    'Pemrograman Mobile - Proyek',
+    'Statistika - Ujian',
   ];
 
   @override
@@ -115,6 +115,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final title = _titleController.text.trim();
     final deadline = _deadlineController.text.trim();
     final description = _descController.text.trim();
+    final courseCategory = _courseController.text.trim().isEmpty
+        ? null
+        : _courseController.text.trim();
 
     // Validasi judul wajib diisi dan bukan hanya spasi
     if (title.isEmpty) {
@@ -184,6 +187,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           deadline: deadline,
           priority: _selectedPriority,
           isCompleted: false,
+          courseCategory: courseCategory,
         );
       } else {
         // Fallback jika AddTaskScreen dijalankan tanpa Provider di context test
@@ -194,6 +198,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           deadline: deadline,
           priority: _selectedPriority,
           isCompleted: false,
+          courseCategory: courseCategory,
         );
       }
 

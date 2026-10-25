@@ -37,7 +37,9 @@ class SupabaseService {
   /// Memastikan ada sesi autentikasi anonim yang aktif tanpa form login
   Future<void> ensureAnonymousSession() async {
     if (!isInitialized) {
-      debugPrint('[SupabaseService] ensureAnonymousSession: Supabase belum diinisialisasi.');
+      debugPrint(
+        '[SupabaseService] ensureAnonymousSession: Supabase belum diinisialisasi.',
+      );
       return;
     }
 
@@ -53,7 +55,9 @@ class SupabaseService {
         return;
       }
 
-      debugPrint('[SupabaseService] Tidak ada sesi aktif. Memanggil signInAnonymously()...');
+      debugPrint(
+        '[SupabaseService] Tidak ada sesi aktif. Memanggil signInAnonymously()...',
+      );
       final authResponse = await auth.signInAnonymously();
       debugPrint(
         '[SupabaseService] signInAnonymously() berhasil: userId=${authResponse.user?.id}, isAnonymous=${authResponse.user?.isAnonymous}',
@@ -64,8 +68,9 @@ class SupabaseService {
     }
   }
 
-  /// Mengambil seluruh data tugas dari tabel 'tasks' di Supabase
-  Future<List<Map<String, dynamic>>> getTasks() async {
+  /// Mengambil seluruh data tugas dari tabel 'tasks' di Supabase.
+  /// Dapat difilter berdasarkan kolom is_archived jika parameter disediakan.
+  Future<List<Map<String, dynamic>>> getTasks({bool? isArchived}) async {
     try {
       final auth = clientInstance.auth;
       final session = auth.currentSession;
@@ -77,11 +82,14 @@ class SupabaseService {
       debugPrint('  - session exists: ${session != null}');
       debugPrint('  - has access token: $hasAccessToken');
       debugPrint('  - user ID: ${user?.id ?? "null"}');
+      debugPrint('  - filter isArchived: $isArchived');
 
-      final response = await clientInstance
-          .from('tasks')
-          .select()
-          .order('created_at', ascending: false);
+      var query = clientInstance.from('tasks').select();
+      if (isArchived != null) {
+        query = query.eq('is_archived', isArchived);
+      }
+
+      final response = await query.order('created_at', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -129,6 +137,18 @@ class SupabaseService {
       payload['user_id'] = user.id;
       debugPrint('  - payload user_id: ${payload['user_id']}');
 
+      // Normalisasi is_archived jika camelCase
+      if (payload.containsKey('isArchived') &&
+          !payload.containsKey('is_archived')) {
+        payload['is_archived'] = payload.remove('isArchived');
+      }
+
+      // Normalisasi course_category jika camelCase
+      if (payload.containsKey('courseCategory') &&
+          !payload.containsKey('course_category')) {
+        payload['course_category'] = payload.remove('courseCategory');
+      }
+
       final response = await clientInstance
           .from('tasks')
           .insert(payload)
@@ -141,6 +161,228 @@ class SupabaseService {
       return Map<String, dynamic>.from(response);
     } catch (e) {
       debugPrint('[SupabaseService] insertTask error: $e');
+      rethrow;
+    }
+  }
+
+  /// Memperbarui tugas pada tabel 'tasks' di Supabase berdasarkan primary key (id).
+  /// Menggunakan filter .eq('id', id) agar hanya tugas yang dipilih yang diperbarui.
+  /// Memastikan operasi terikat dengan user_id pengguna aktif untuk mematuhi RLS.
+  Future<Map<String, dynamic>> updateTask(
+    String id,
+    Map<String, dynamic> taskData,
+  ) async {
+    try {
+      if (clientInstance.auth.currentUser == null) {
+        debugPrint(
+          '[SupabaseService] currentUser null sebelum update, mencoba ensureAnonymousSession()...',
+        );
+        await ensureAnonymousSession();
+      }
+
+      final auth = clientInstance.auth;
+      final session = auth.currentSession;
+      final user = auth.currentUser;
+      final hasAccessToken =
+          session?.accessToken != null && session!.accessToken.isNotEmpty;
+
+      debugPrint('[SupabaseService] Diagnostic pre-update:');
+      debugPrint('  - isInitialized: $isInitialized');
+      debugPrint('  - target task id: $id');
+      debugPrint('  - session exists: ${session != null}');
+      debugPrint('  - has access token: $hasAccessToken');
+      debugPrint('  - user ID: ${user?.id ?? "null"}');
+      debugPrint('  - is anonymous: ${user?.isAnonymous ?? false}');
+
+      if (user == null || session == null || !hasAccessToken) {
+        throw const AuthException(
+          'Gagal memperbarui tugas: Sesi autentikasi Supabase tidak ditemukan (user/session null). '
+          'Pastikan sesi aktif tersedia sebelum melakukan update.',
+        );
+      }
+
+      final payload = Map<String, dynamic>.from(taskData);
+      // Hapus id dari payload agar primary key tidak ikut di-update
+      payload.remove('id');
+
+      // Pastikan user_id tetap terikat dengan pemiliknya
+      if (!payload.containsKey('user_id') || payload['user_id'] == null) {
+        payload['user_id'] = user.id;
+      }
+
+      // Normalisasi is_completed jika diberikan dalam format camelCase
+      if (payload.containsKey('isCompleted') &&
+          !payload.containsKey('is_completed')) {
+        payload['is_completed'] = payload.remove('isCompleted');
+      }
+      debugPrint('  - is_completed payload: ${payload['is_completed']}');
+
+      // Normalisasi is_archived jika diberikan dalam format camelCase
+      if (payload.containsKey('isArchived') &&
+          !payload.containsKey('is_archived')) {
+        payload['is_archived'] = payload.remove('isArchived');
+      }
+      debugPrint('  - is_archived payload: ${payload['is_archived']}');
+
+      // Normalisasi course_category jika diberikan dalam format camelCase
+      if (payload.containsKey('courseCategory') &&
+          !payload.containsKey('course_category')) {
+        payload['course_category'] = payload.remove('courseCategory');
+      }
+      debugPrint('  - course_category payload: ${payload['course_category']}');
+
+      final response = await clientInstance
+          .from('tasks')
+          .update(payload)
+          .eq('id', id)
+          .select()
+          .single();
+
+      debugPrint('[SupabaseService] updateTask sukses untuk task ID: $id');
+      return Map<String, dynamic>.from(response);
+    } catch (e) {
+      debugPrint('[SupabaseService] updateTask error: $e');
+      rethrow;
+    }
+  }
+
+  /// Memperbarui kolom is_archived secara spesifik untuk tugas berdasarkan id
+  Future<Map<String, dynamic>> updateTaskArchiveStatus(
+    String id,
+    bool isArchived,
+  ) async {
+    return updateTask(id, {'is_archived': isArchived});
+  }
+
+  /// Mengambil data profil pengguna dari tabel 'profiles' di Supabase
+  Future<Map<String, dynamic>?> getProfile(String userId) async {
+    try {
+      if (clientInstance.auth.currentUser == null) {
+        await ensureAnonymousSession();
+      }
+
+      final response = await clientInstance
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
+
+      return response;
+    } catch (e) {
+      debugPrint('[SupabaseService] getProfile error: $e');
+      return null;
+    }
+  }
+
+  /// Memperbarui atau menyimpan data profil pengguna pada tabel 'profiles'
+  /// Menggunakan id pengguna aktif untuk mematuhi RLS
+  Future<Map<String, dynamic>> upsertProfile(
+    Map<String, dynamic> profileData,
+  ) async {
+    try {
+      if (clientInstance.auth.currentUser == null) {
+        await ensureAnonymousSession();
+      }
+
+      final auth = clientInstance.auth;
+      final user = auth.currentUser;
+      final session = auth.currentSession;
+      final hasAccessToken =
+          session?.accessToken != null && session!.accessToken.isNotEmpty;
+
+      if (user == null || session == null || !hasAccessToken) {
+        throw const AuthException(
+          'Gagal menyimpan profil: Sesi autentikasi Supabase tidak ditemukan.',
+        );
+      }
+
+      final payload = Map<String, dynamic>.from(profileData);
+      payload['id'] = user.id;
+      payload['updated_at'] = DateTime.now().toIso8601String();
+
+      final response = await clientInstance
+          .from('profiles')
+          .upsert(payload, onConflict: 'id')
+          .select()
+          .single();
+
+      // Sinkronisasi data ke metadata autentikasi Supabase untuk redundansi
+      try {
+        await auth.updateUser(
+          UserAttributes(
+            data: {
+              'name': payload['name'],
+              'student_id': payload['student_id'],
+              'class_name': payload['class_name'],
+              'study_program': payload['study_program'],
+              'university': payload['university'],
+              if (payload['photo_url'] != null)
+                'photo_url': payload['photo_url'],
+            },
+          ),
+        );
+      } catch (authError) {
+        debugPrint('[SupabaseService] updateUser metadata warning: $authError');
+      }
+
+      debugPrint(
+        '[SupabaseService] upsertProfile sukses untuk user: ${user.id}',
+      );
+      return Map<String, dynamic>.from(response);
+    } catch (e) {
+      debugPrint('[SupabaseService] upsertProfile error: $e');
+      rethrow;
+    }
+  }
+
+  /// Mengunggah berkas foto profil ke Supabase Storage (bucket 'avatars')
+  /// Mengembalikan URL publik foto profil yang tersimpan
+  Future<String> uploadProfilePhoto({
+    required String userId,
+    required Uint8List bytes,
+    required String fileExtension,
+  }) async {
+    try {
+      if (clientInstance.auth.currentUser == null) {
+        await ensureAnonymousSession();
+      }
+
+      final currentUser = clientInstance.auth.currentUser;
+
+      if (currentUser == null || currentUser.id != userId) {
+        throw const AuthException(
+          'ID pengguna tidak cocok dengan sesi autentikasi aktif.',
+        );
+      }
+
+      final ext = fileExtension.replaceAll('.', '').toLowerCase();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final storagePath = '$userId/avatar_$timestamp.$ext';
+
+      String contentType = 'image/jpeg';
+      if (ext == 'png') {
+        contentType = 'image/png';
+      } else if (ext == 'webp') {
+        contentType = 'image/webp';
+      } else if (ext == 'gif') {
+        contentType = 'image/gif';
+      }
+
+      await clientInstance.storage
+          .from('avatars')
+          .uploadBinary(
+            storagePath,
+            bytes,
+            fileOptions: FileOptions(upsert: true, contentType: contentType),
+          );
+
+      final publicUrl = clientInstance.storage
+          .from('avatars')
+          .getPublicUrl(storagePath);
+      debugPrint('[SupabaseService] uploadProfilePhoto sukses: $publicUrl');
+      return publicUrl;
+    } catch (e) {
+      debugPrint('[SupabaseService] uploadProfilePhoto error: $e');
       rethrow;
     }
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/task.dart';
 import '../data/sample_tasks.dart';
+import '../providers/task_provider.dart';
 import 'edit_task_screen.dart';
 
 class TaskDetailScreen extends StatefulWidget {
@@ -19,6 +21,8 @@ class TaskDetailScreen extends StatefulWidget {
 
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
   late Task _task;
+  bool _isTogglingStatus = false;
+  bool _isTogglingArchive = false;
 
   @override
   void initState() {
@@ -59,26 +63,141 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     }
   }
 
-  void _toggleTaskStatus() {
-    final updated = _task.copyWith(isCompleted: !_task.isCompleted);
-    setState(() {
-      _task = updated;
-    });
-    widget.onTaskUpdated?.call(updated);
+  Future<void> _toggleTaskStatus() async {
+    if (_isTogglingStatus) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          updated.isCompleted
-              ? 'Tugas ditandai selesai.'
-              : 'Tugas ditandai belum selesai.',
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
+    setState(() {
+      _isTogglingStatus = true;
+    });
+
+    try {
+      TaskProvider? provider;
+      try {
+        provider = Provider.of<TaskProvider>(context, listen: false);
+      } catch (_) {
+        provider = null;
+      }
+
+      Task savedResult;
+      if (provider != null) {
+        // Alur Provider -> Repository -> Service -> Supabase
+        savedResult = await provider.toggleTaskCompletion(_task);
+      } else {
+        // Fallback saat dijalankan tanpa provider (misal unit widget test)
+        savedResult = _task.copyWith(isCompleted: !_task.isCompleted);
+      }
+
+      if (mounted) {
+        setState(() {
+          _task = savedResult;
+          _isTogglingStatus = false;
+        });
+
+        widget.onTaskUpdated?.call(savedResult);
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              savedResult.isCompleted
+                  ? 'Tugas ditandai selesai.'
+                  : 'Tugas ditandai belum selesai.',
+            ),
+            backgroundColor: const Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isTogglingStatus = false;
+        });
+
+        // Error Supabase ditampilkan dengan jelas dan tidak dianggap sebagai keberhasilan
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui status tugas: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleArchiveStatus() async {
+    if (_isTogglingArchive) return;
+
+    setState(() {
+      _isTogglingArchive = true;
+    });
+
+    try {
+      TaskProvider? provider;
+      try {
+        provider = Provider.of<TaskProvider>(context, listen: false);
+      } catch (_) {
+        provider = null;
+      }
+
+      Task savedResult;
+      if (provider != null) {
+        savedResult = await provider.toggleTaskArchive(_task);
+      } else {
+        savedResult = _task.copyWith(isArchived: !_task.isArchived);
+      }
+
+      if (mounted) {
+        setState(() {
+          _task = savedResult;
+          _isTogglingArchive = false;
+        });
+
+        widget.onTaskUpdated?.call(savedResult);
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              savedResult.isArchived
+                  ? 'Tugas "${savedResult.title}" berhasil diarsipkan.'
+                  : 'Tugas "${savedResult.title}" berhasil dipulihkan dari arsip.',
+            ),
+            backgroundColor: const Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isTogglingArchive = false;
+        });
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui status arsip tugas: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Color _getPriorityColor(String priority) {
@@ -156,6 +275,39 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: _task.isArchived ? 'Pulihkan Tugas' : 'Arsipkan Tugas',
+            icon: Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: _task.isArchived
+                    ? const Color(0xFFFEF3C7)
+                    : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: _isTogglingArchive
+                  ? const SizedBox(
+                      width: 19,
+                      height: 19,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF2563EB),
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      _task.isArchived
+                          ? Icons.unarchive_rounded
+                          : Icons.archive_outlined,
+                      color: _task.isArchived
+                          ? const Color(0xFFD97706)
+                          : const Color(0xFF334155),
+                      size: 19,
+                    ),
+            ),
+            onPressed: _isTogglingArchive ? null : _toggleArchiveStatus,
+          ),
+          IconButton(
             tooltip: 'Edit Tugas',
             icon: Container(
               padding: const EdgeInsets.all(7),
@@ -205,6 +357,78 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       runSpacing: 8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
+                        if (_task.courseCategory != null &&
+                            _task.courseCategory!.trim().isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3E8FF),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: const Color(0xFFDDD6FE),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.school_outlined,
+                                  size: 12,
+                                  color: Color(0xFF7C3AED),
+                                ),
+                                const SizedBox(width: 3),
+                                Flexible(
+                                  child: Text(
+                                    _task.courseCategory!.trim(),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF7C3AED),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (_task.isArchived)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF3C7),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: const Color(0xFFFDE68A),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.archive_outlined,
+                                  size: 12,
+                                  color: Color(0xFFB45309),
+                                ),
+                                SizedBox(width: 3),
+                                Text(
+                                  'Diarsipkan',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFFB45309),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         // Priority Badge
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -336,6 +560,61 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 ),
                 child: Column(
                   children: [
+                    // Course Category Item
+                    Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3E8FF),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.school_outlined,
+                              color: Color(0xFF7C3AED),
+                              size: 19,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Mata Kuliah / Kategori',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _task.displayCourseCategory,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: (_task.courseCategory != null &&
+                                            _task.courseCategory!.trim().isNotEmpty)
+                                        ? const Color(0xFF0F172A)
+                                        : const Color(0xFF94A3B8),
+                                    fontStyle: (_task.courseCategory != null &&
+                                            _task.courseCategory!.trim().isNotEmpty)
+                                        ? FontStyle.normal
+                                        : FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
                     // Deadline Item
                     Padding(
                       padding: const EdgeInsets.all(14),
@@ -563,15 +842,27 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   );
 
                   Widget completeButton = ElevatedButton.icon(
-                    onPressed: _toggleTaskStatus,
-                    icon: Icon(
-                      isCompleted
-                          ? Icons.undo_rounded
-                          : Icons.check_circle_rounded,
-                      size: 18,
-                    ),
+                    onPressed: _isTogglingStatus ? null : _toggleTaskStatus,
+                    icon: _isTogglingStatus
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Icon(
+                            isCompleted
+                                ? Icons.undo_rounded
+                                : Icons.check_circle_rounded,
+                            size: 18,
+                          ),
                     label: Text(
-                      isCompleted ? 'Tandai Belum' : 'Tandai Selesai',
+                      _isTogglingStatus
+                          ? 'Menyimpan...'
+                          : (isCompleted ? 'Tandai Belum' : 'Tandai Selesai'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -579,9 +870,66 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       backgroundColor: isCompleted
                           ? const Color(0xFF0F172A)
                           : const Color(0xFF16A34A),
+                      disabledBackgroundColor: const Color(0xFF64748B),
                       foregroundColor: Colors.white,
+                      disabledForegroundColor: Colors.white70,
                       elevation: 2,
                       shadowColor: const Color(0x22000000),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  );
+
+                  Widget archiveButton = OutlinedButton.icon(
+                    onPressed: _isTogglingArchive ? null : _toggleArchiveStatus,
+                    icon: _isTogglingArchive
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF2563EB),
+                              ),
+                            ),
+                          )
+                        : Icon(
+                            _task.isArchived
+                                ? Icons.unarchive_rounded
+                                : Icons.archive_outlined,
+                            size: 18,
+                            color: _task.isArchived
+                                ? const Color(0xFF2563EB)
+                                : const Color(0xFF475569),
+                          ),
+                    label: Text(
+                      _isTogglingArchive
+                          ? 'Menyimpan...'
+                          : (_task.isArchived
+                              ? 'Pulihkan Tugas'
+                              : 'Arsipkan Tugas'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _task.isArchived
+                          ? const Color(0xFF2563EB)
+                          : const Color(0xFF0F172A),
+                      side: BorderSide(
+                        color: _task.isArchived
+                            ? const Color(0xFF93C5FD)
+                            : const Color(0xFFCBD5E1),
+                        width: 1.2,
+                      ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 14,
@@ -602,16 +950,27 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       children: [
                         editButton,
                         const SizedBox(height: 10),
+                        archiveButton,
+                        const SizedBox(height: 10),
                         completeButton,
                       ],
                     );
                   }
 
-                  return Row(
+                  return Column(
                     children: [
-                      Expanded(child: editButton),
-                      const SizedBox(width: 12),
-                      Expanded(child: completeButton),
+                      Row(
+                        children: [
+                          Expanded(child: editButton),
+                          const SizedBox(width: 12),
+                          Expanded(child: archiveButton),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: completeButton,
+                      ),
                     ],
                   );
                 },
