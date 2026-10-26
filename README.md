@@ -87,6 +87,162 @@ TaskMate dibangun dengan rangkaian fitur lengkap yang telah diuji dan diimplemen
 
 ---
 
+## 📱 Screenshot Aplikasi
+
+Berikut adalah dokumentasi tangkapan layar antarmuka pengguna (*User Interface*) aplikasi TaskMate pada versi finalisasi pada layar ponsel Pixel 9:
+
+### Home / Dashboard — Bagian Atas
+Menampilkan header sapaan personal mahasiswa, NIM, kelas, status semester aktif, bilah progres penyelesaian tugas (*progress bar*), kutipan motivasi harian yang dimuat secara dinamis dari REST API, dan ringkasan metrik status tugas.
+
+![Home Dashboard Bagian Atas](docs/screenshots/UI%20-%20Finalisasi/home1.png)
+
+### Home / Dashboard — Bagian Bawah
+Menampilkan kelanjutan ringkasan metrik tugas (*Total Tugas, Selesai, Belum Selesai*), daftar tugas kuliah mendatang (*upcoming tasks*), dan tombol aksi cepat (*Floating Action Button*) "Tambah Tugas".
+
+![Home Dashboard Bagian Bawah](docs/screenshots/UI%20-%20Finalisasi/home2.png)
+
+### Daftar Tugas Kuliah
+Menampilkan daftar seluruh tugas perkuliahan dalam bentuk kartu modern (*TaskCard*), dilengkapi filter status (*Semua, Belum Selesai, Selesai, Arsip*), filter prioritas (*Tinggi, Sedang, Rendah*), penanda mata kuliah, dan tanggal tenggat waktu (*deadline*).
+
+![Daftar Tugas Kuliah](docs/screenshots/UI%20-%20Finalisasi/task_list.png)
+
+### Pencarian Tugas Real-Time
+Fitur pencarian interaktif yang menyaring tugas secara instan berdasarkan kata kunci judul tugas atau mata kuliah secara *case-insensitive*.
+
+![Pencarian Tugas](docs/screenshots/UI%20-%20Finalisasi/task_search.png)
+
+### Filter Status & Prioritas Tugas
+Penyaringan daftar tugas menggunakan kombinasi kriteria status (misalnya tugas *Belum Selesai*) dan tingkat prioritas (prioritas *Sedang*).
+
+![Filter Tugas](docs/screenshots/UI%20-%20Finalisasi/task_filter.png)
+
+### Detail Tugas Kuliah
+Halaman rincian lengkap tugas perkuliahan yang memuat kategori mata kuliah, batas waktu pengumpulan (*deadline*), tingkat prioritas, status pengerjaan, catatan rincian, serta tombol aksi (*Tandai Selesai, Edit Tugas, Arsipkan Tugas, Hapus Tugas*).
+
+![Detail Tugas Kuliah](docs/screenshots/UI%20-%20Finalisasi/task_detail.png)
+
+### Status Tugas Selesai
+Indikator visual tugas yang telah berhasil diselesaikan dengan coretan teks (*strikethrough*), checklist hijau, badge status selesai, *Floating SnackBar* konfirmasi sukses, dan tombol untuk menandai kembali tugas menjadi belum selesai.
+
+![Status Tugas Selesai](docs/screenshots/UI%20-%20Finalisasi/task_completed.png)
+
+### Tambah Tugas Baru — Bagian 1 (Informasi & Kategori)
+Formulir pembuatan tugas kuliah baru yang mencakup isian judul tugas serta pemilihan kategori mata kuliah dengan chip saran cepat (*quick chips*).
+
+![Tambah Tugas Baru Bagian 1](docs/screenshots/UI%20-%20Finalisasi/task_add1.png)
+
+### Tambah Tugas Baru — Bagian 2 (Jadwal & Prioritas)
+Pemilihan tenggat waktu (*deadline*) interaktif berbasis pemilih tanggal/waktu, penentuan tingkat prioritas (*Rendah, Sedang, Tinggi*), area catatan deskripsi opsional, dan tombol *Simpan Tugas Baru*.
+
+![Tambah Tugas Baru Bagian 2](docs/screenshots/UI%20-%20Finalisasi/task_add2.png)
+
+### Validasi Formulir Tugas
+Penerapan validasi input formulir secara ketat dengan indikator visual garis tepi merah dan pesan error (*"Judul tugas wajib diisi!"* serta *"Tenggat waktu (deadline) wajib diisi!"*) saat pengguna belum melengkapi field wajib.
+
+![Validasi Formulir Tugas](docs/screenshots/UI%20-%20Finalisasi/form_validation.png)
+
+### Edit Tugas — Bagian 1 (Informasi & Status)
+Formulir pengeditan rincian tugas yang sudah tersimpan dengan penanda visual bahwa status pengerjaan saat ini dipertahankan secara konsisten.
+
+![Edit Tugas Bagian 1](docs/screenshots/UI%20-%20Finalisasi/task_edit1.png)
+
+### Edit Tugas — Bagian 2 (Jadwal & Catatan)
+Pembaruan jadwal tenggat waktu, pengubahan tingkat prioritas, penyuntingan catatan rincian, dan tombol konfirmasi *Simpan Perubahan*.
+
+![Edit Tugas Bagian 2](docs/screenshots/UI%20-%20Finalisasi/task_edit2.png)
+
+### Dialog Konfirmasi Hapus Tugas
+Modal dialog konfirmasi penghapusan permanen tugas kuliah dengan penyebutan judul tugas secara eksplisit untuk mencegah ketidaksengajaan pengguna.
+
+![Dialog Konfirmasi Hapus Tugas](docs/screenshots/UI%20-%20Finalisasi/task_delete_dialog.png)
+
+### Arsip Tugas Mahasiswa
+Halaman khusus pengelolaan tugas yang telah diarsipkan agar daftar tugas utama tetap rapi, dilengkapi fitur *Pulihkan* (*Restore*) untuk mengembalikan tugas ke daftar aktif sewaktu-waktu.
+
+![Arsip Tugas](docs/screenshots/UI%20-%20Finalisasi/task_archive.png)
+
+### Profil Mahasiswa — Identitas & Statistik
+Kartu identitas mahasiswa yang menyajikan avatar foto profil, nama lengkap, NIM, kelas, ringkasan capaian statistik (*Total Tugas, Selesai, Progres %*), dan tombol navigasi menuju *Edit Profil*.
+
+![Profil Mahasiswa Identitas](docs/screenshots/UI%20-%20Finalisasi/profile1.png)
+
+### Profil Mahasiswa — Informasi Akademik & Aplikasi
+Rincian data akademik lengkap (NIM, Kelas, Program Studi, Perguruan Tinggi) serta kartu ringkasan mengenai aplikasi TaskMate.
+
+![Profil Mahasiswa Informasi Akademik](docs/screenshots/UI%20-%20Finalisasi/profile2.png)
+
+### Integrasi REST API — Kutipan Motivasi Harian
+Widget kartu kutipan inspiratif yang dikonsumsi secara real-time dari endpoint publik REST API, dilengkapi tombol penyegaran (*refresh*) untuk memuat kutipan baru.
+
+![Integrasi REST API Kutipan](docs/screenshots/UI%20-%20Finalisasi/api_quote.png)
+
+### Integrasi Supabase Cloud Database
+Bukti sinkronisasi data tugas secara real-time yang tersimpan persisten pada database cloud Supabase dengan isolasi keamanan Row Level Security (RLS).
+
+![Integrasi Supabase Tasks](docs/screenshots/UI%20-%20Finalisasi/supabase_tasks.png)
+
+---
+
+## 📐 Pengujian Responsivitas
+
+Pengujian responsivitas dilakukan untuk memverifikasi adaptabilitas antarmuka TaskMate pada berbagai ukuran layar (*breakpoints*). Halaman Beranda (*Home / Dashboard*) digunakan sebagai acuan pembanding langsung (*side-by-side comparison*) untuk memperlihatkan penyesuaian layout yang mulus:
+
+### Tablet — 850 × 1285 px
+Pada tata letak tablet (*medium layout*), sistem antarmuka beradaptasi secara dinamis menjadi multi-kolom yang proporsional. Kartu ringkasan metrik tugas tersusun dalam format grid responsif (2 kartu di baris atas dan 1 kartu di baris bawah), memanfaatkan ruang layar yang lebih lebar tanpa distorsi visual.
+
+![Responsive Tablet 1](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%281%29.png)
+
+![Responsive Tablet 2](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%282%29.png)
+
+![Responsive Tablet 3](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%283%29.png)
+
+![Responsive Tablet 4](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%284%29.png)
+
+![Responsive Tablet 5](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%285%29.png)
+
+![Responsive Tablet 6](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%286%29.png)
+
+![Responsive Tablet 7](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%287%29.png)
+
+![Responsive Tablet 8](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%288%29.png)
+
+![Responsive Tablet 9](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%289%29.png)
+
+![Responsive Tablet 10](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%2810%29.png)
+
+![Responsive Tablet 11](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%2811%29.png)
+
+![Responsive Tablet 12](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%2812%29.png)
+
+![Responsive Tablet 13](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%2813%29.png)
+
+![Responsive Tablet 14](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Tablet%20850%20x%201285%20px/responsive%20%2814%29.png)
+
+### Desktop — 1024 × 1440 px
+Pada resolusi layar desktop atau monitor lebar (*expanded layout*), antarmuka memanfaatkan bentang horizontal secara optimal. Seluruh kartu ringkasan metrik tugas (*Total Tugas, Selesai, Belum Selesai*) berjejer horizontal dalam 3 kolom sejajar pada satu baris, menyajikan hierarki informasi yang lapang, seimbang, dan elegan.
+
+![Responsive Desktop 1](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Destop%201024%20x%201440%20px/responsive%20%281%29.png)
+
+![Responsive Desktop 2](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Destop%201024%20x%201440%20px/responsive%20%282%29.png)
+
+![Responsive Desktop 3](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Destop%201024%20x%201440%20px/responsive%20%283%29.png)
+
+![Responsive Desktop 4](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Destop%201024%20x%201440%20px/responsive%20%284%29.png)
+
+![Responsive Desktop 5](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Destop%201024%20x%201440%20px/responsive%20%285%29.png)
+
+![Responsive Desktop 6](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Destop%201024%20x%201440%20px/responsive%20%286%29.png)
+
+![Responsive Desktop 7](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Destop%201024%20x%201440%20px/responsive%20%287%29.png)
+
+![Responsive Desktop 8](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Destop%201024%20x%201440%20px/responsive%20%288%29.png)
+
+![Responsive Desktop 9](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Destop%201024%20x%201440%20px/responsive%20%289%29.png)
+
+![Responsive Desktop 10](docs/screenshots/UI%20-%20Finalisasi/Responsive%20Layout/Destop%201024%20x%201440%20px/responsive%20%2810%29.png)
+
+---
+
 ## 🛠️ Teknologi yang Digunakan
 
 Aplikasi TaskMate dibangun menggunakan ekosistem teknologi terkini:
