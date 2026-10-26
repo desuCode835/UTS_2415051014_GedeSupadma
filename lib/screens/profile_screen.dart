@@ -456,6 +456,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       completedTasks = taskProvider.completedTasks;
     } catch (_) {}
 
+    ProfileProvider? profileProvider;
+    try {
+      profileProvider = Provider.of<ProfileProvider>(context);
+    } catch (_) {
+      profileProvider = null;
+    }
+
     final progressPercent =
         totalTasks > 0 ? ((completedTasks / totalTasks) * 100).round() : 0;
 
@@ -512,12 +519,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
-          child: Column(
-            children: [
-              // Hero Profile Card
-              Container(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            if (profileProvider != null) {
+              await profileProvider.loadProfile();
+            }
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+            child: Column(
+              children: [
+                if (profileProvider?.errorMessage != null) ...[
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFFECACA),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          size: 18,
+                          color: Color(0xFFDC2626),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Pembaruan profil gagal. Menampilkan data lokal.',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF991B1B),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => profileProvider!.loadProfile(),
+                          child: const Text(
+                            'Coba Lagi',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFDC2626),
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                // Hero Profile Card
+                Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
@@ -858,6 +923,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

@@ -380,34 +380,85 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                           ),
                         ],
                       )
-                    : LayoutBuilder(
-                        builder: (context, constraints) {
-                          int crossAxisCount = 1;
-                          if (constraints.maxWidth >= 840) {
-                            crossAxisCount = 3;
-                          } else if (constraints.maxWidth >= 600) {
-                            crossAxisCount = 2;
-                          }
-
-                          return GridView.builder(
-                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                            itemCount: displayedTasks.length,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              mainAxisExtent: 205,
+                    : Column(
+                        children: [
+                          if (errorMessage != null && archivedTasks.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              color: const Color(0xFFFEF2F2),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline_rounded,
+                                    size: 16,
+                                    color: Color(0xFFDC2626),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      errorMessage,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF991B1B),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: _refreshFromSupabase,
+                                    child: const Text(
+                                      'Coba Lagi',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFFDC2626),
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            itemBuilder: (context, index) {
-                              final task = displayedTasks[index];
-                              final isRestoring =
-                                  _restoringIds.contains(task.id);
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                int crossAxisCount = 1;
+                                if (constraints.maxWidth >= 840) {
+                                  crossAxisCount = 3;
+                                } else if (constraints.maxWidth >= 600) {
+                                  crossAxisCount = 2;
+                                }
 
-                              return _buildArchivedTaskCard(task, isRestoring);
-                            },
-                          );
-                        },
+                                return GridView.builder(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                                  itemCount: displayedTasks.length,
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossAxisCount,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    mainAxisExtent: 205,
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    final task = displayedTasks[index];
+                                    final isRestoring =
+                                        _restoringIds.contains(task.id);
+
+                                    return _buildArchivedTaskCard(
+                                      task,
+                                      isRestoring,
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ],
                       ),
       ),
     );

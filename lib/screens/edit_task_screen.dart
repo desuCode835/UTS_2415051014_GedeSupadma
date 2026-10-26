@@ -131,43 +131,20 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   }
 
   Future<void> _submitEdit() async {
+    if (_isSubmitting) return;
+
+    final formValid = _formKey.currentState?.validate() ?? false;
     final title = _titleController.text.trim();
     final deadline = _deadlineController.text.trim();
     final description = _descController.text.trim();
 
-    // 1. Validasi judul wajib diisi dan bukan hanya spasi
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Judul tugas wajib diisi!'),
-          backgroundColor: const Color(0xFFDC2626),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+    // Validasi sebelum request database dikirim:
+    // Judul wajib diisi (bukan hanya spasi) dan tenggat waktu wajib diisi.
+    if (!formValid || title.isEmpty || deadline.isEmpty) {
       return;
     }
 
-    // 2. Validasi tenggat waktu wajib diisi
-    if (deadline.isEmpty) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Tenggat waktu (deadline) wajib diisi!'),
-          backgroundColor: const Color(0xFFDC2626),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-      return;
-    }
-
-    // 3. Validasi prioritas harus valid (Rendah, Sedang, atau Tinggi)
+    // Validasi prioritas harus valid (Rendah, Sedang, atau Tinggi)
     if (!_validPriorities.contains(_selectedPriority)) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(

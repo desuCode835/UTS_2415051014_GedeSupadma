@@ -28,15 +28,18 @@ class QuoteProvider with ChangeNotifier {
       _quote = fetched;
       _errorMessage = null;
     } on SocketException catch (e) {
-      _errorMessage = 'Tidak ada koneksi internet. Periksa jaringan Anda (${e.message}).';
+      _errorMessage =
+          'Tidak ada koneksi internet. Periksa koneksi internet dan coba lagi (${e.message}).';
     } on TimeoutException {
-      _errorMessage = 'Koneksi waktu habis saat memuat kutipan. Silakan coba lagi.';
+      _errorMessage =
+          'Koneksi waktu habis saat memuat kutipan. Silakan coba lagi.';
     } on HttpException catch (e) {
-      _errorMessage = e.message;
+      _errorMessage = 'Data kutipan belum dapat dimuat: ${e.message}';
     } on FormatException catch (e) {
-      _errorMessage = e.message;
-    } catch (e) {
-      _errorMessage = 'Gagal memuat kutipan motivasi: $e';
+      _errorMessage = 'Data kutipan tidak valid: ${e.message}';
+    } catch (_) {
+      _errorMessage =
+          'Data belum dapat dimuat. Periksa koneksi internet dan coba lagi.';
     } finally {
       _isLoading = false;
       notifyListeners();

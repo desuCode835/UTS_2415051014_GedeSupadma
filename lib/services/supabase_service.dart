@@ -231,15 +231,28 @@ class SupabaseService {
       }
       debugPrint('  - course_category payload: ${payload['course_category']}');
 
-      final response = await clientInstance
+      final List<dynamic> response = await clientInstance
           .from('tasks')
           .update(payload)
           .eq('id', id)
-          .select()
-          .single();
+          .select();
+
+      debugPrint(
+        '[SupabaseService] updateTask response count: ${response.length}',
+      );
+
+      if (response.isEmpty) {
+        debugPrint(
+          '[SupabaseService] updateTask gagal: 0 record diperbarui untuk task ID: $id. '
+          'Penyebab potensial: ID tidak ditemukan atau RLS UPDATE policy pada tabel "tasks" menolak.',
+        );
+        throw Exception(
+          'Gagal memperbarui tugas: Data tidak ditemukan atau operasi ditolak oleh database (RLS).',
+        );
+      }
 
       debugPrint('[SupabaseService] updateTask sukses untuk task ID: $id');
-      return Map<String, dynamic>.from(response);
+      return Map<String, dynamic>.from(response.first as Map);
     } catch (e) {
       debugPrint('[SupabaseService] updateTask error: $e');
       rethrow;
@@ -335,7 +348,7 @@ class SupabaseService {
       return response;
     } catch (e) {
       debugPrint('[SupabaseService] getProfile error: $e');
-      return null;
+      rethrow;
     }
   }
 

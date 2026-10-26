@@ -4,7 +4,20 @@ import '../models/task.dart';
 import '../providers/task_provider.dart';
 
 class AddTaskScreen extends StatefulWidget {
-  const AddTaskScreen({super.key});
+  final String? initialTitle;
+  final String? initialDeadline;
+  final String? initialDescription;
+  final String? initialCourseCategory;
+  final String? initialPriority;
+
+  const AddTaskScreen({
+    super.key,
+    this.initialTitle,
+    this.initialDeadline,
+    this.initialDescription,
+    this.initialCourseCategory,
+    this.initialPriority,
+  });
 
   @override
   State<AddTaskScreen> createState() => _AddTaskScreenState();
@@ -13,10 +26,10 @@ class AddTaskScreen extends StatefulWidget {
 class _AddTaskScreenState extends State<AddTaskScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _courseController = TextEditingController();
-  final TextEditingController _descController = TextEditingController();
-  final TextEditingController _deadlineController = TextEditingController();
+  late final TextEditingController _titleController;
+  late final TextEditingController _courseController;
+  late final TextEditingController _descController;
+  late final TextEditingController _deadlineController;
 
   String _selectedPriority = 'Sedang';
   bool _isSubmitting = false;
@@ -29,6 +42,22 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     'Pemrograman Mobile - Proyek',
     'Statistika - Ujian',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.initialTitle ?? '');
+    _courseController =
+        TextEditingController(text: widget.initialCourseCategory ?? '');
+    _descController =
+        TextEditingController(text: widget.initialDescription ?? '');
+    _deadlineController =
+        TextEditingController(text: widget.initialDeadline ?? '');
+    if (widget.initialPriority != null &&
+        _validPriorities.contains(widget.initialPriority)) {
+      _selectedPriority = widget.initialPriority!;
+    }
+  }
 
   @override
   void dispose() {
@@ -112,6 +141,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   }
 
   Future<void> _submitTask() async {
+    if (_isSubmitting) return;
+
+    final formValid = _formKey.currentState?.validate() ?? false;
     final title = _titleController.text.trim();
     final deadline = _deadlineController.text.trim();
     final description = _descController.text.trim();
@@ -119,35 +151,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         ? null
         : _courseController.text.trim();
 
-    // Validasi judul wajib diisi dan bukan hanya spasi
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Judul tugas wajib diisi!'),
-          backgroundColor: const Color(0xFFDC2626),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-      return;
-    }
-
-    // Validasi tenggat waktu wajib dipilih
-    if (deadline.isEmpty) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Tenggat waktu (deadline) wajib diisi!'),
-          backgroundColor: const Color(0xFFDC2626),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+    // Validasi sebelum request database dikirim:
+    // Judul wajib diisi (bukan hanya spasi) dan tenggat wajib diisi.
+    if (!formValid || title.isEmpty || deadline.isEmpty) {
       return;
     }
 

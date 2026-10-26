@@ -18,8 +18,19 @@ class ApiService {
       ).timeout(timeout);
 
       if (response.statusCode == 200) {
+        if (response.body.trim().isEmpty) {
+          throw const FormatException('Respons server kosong.');
+        }
         final dynamic decoded = jsonDecode(response.body);
         if (decoded is Map<String, dynamic>) {
+          if (!decoded.containsKey('quote') ||
+              decoded['quote'] == null ||
+              (decoded['quote'] is String &&
+                  (decoded['quote'] as String).trim().isEmpty)) {
+            throw const FormatException(
+              'Data kutipan tidak ditemukan atau bernilai kosong dalam respons server.',
+            );
+          }
           return Quote.fromJson(decoded);
         } else {
           throw const FormatException('Format respons JSON tidak valid.');

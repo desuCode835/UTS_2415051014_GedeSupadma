@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import '../models/task.dart';
-import '../data/sample_tasks.dart';
 import '../repositories/task_repository.dart';
 
 class TaskProvider with ChangeNotifier {
@@ -42,10 +41,6 @@ class TaskProvider with ChangeNotifier {
       _errorMessage = null;
     } catch (e) {
       _errorMessage = 'Gagal memuat tugas dari database: $e';
-      // Pertahankan data contoh jika database belum tersedia
-      if (_tasks.isEmpty) {
-        _tasks = List.from(sampleTasks);
-      }
     } finally {
       _isLoading = false;
       notifyListeners();

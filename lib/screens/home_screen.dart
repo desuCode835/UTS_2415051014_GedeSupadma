@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/task.dart';
 import '../providers/quote_provider.dart';
+import '../providers/task_provider.dart';
 import '../data/sample_tasks.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/task_card.dart';
@@ -34,8 +35,26 @@ class HomeScreen extends StatelessWidget {
       quoteProvider = null;
     }
 
+    TaskProvider? taskProvider;
+    try {
+      taskProvider = context.watch<TaskProvider>();
+    } catch (_) {
+      taskProvider = null;
+    }
+
+    final List<Task> effectiveSourceTasks;
+    if (tasks != null) {
+      effectiveSourceTasks = tasks!;
+    } else if (taskProvider != null) {
+      effectiveSourceTasks = taskProvider.tasks;
+    } else {
+      effectiveSourceTasks = sampleTasks;
+    }
+
     final taskList =
-        (tasks ?? sampleTasks).where((t) => !t.isArchived).toList();
+        effectiveSourceTasks.where((t) => !t.isArchived).toList();
+    final isTasksLoading = taskProvider?.isLoading ?? false;
+    final tasksErrorMessage = taskProvider?.errorMessage;
     final totalCount = taskList.length;
     final completedCount = taskList.where((t) => t.isCompleted).length;
     final pendingCount = totalCount - completedCount;
@@ -180,9 +199,23 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
-          child: Column(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            final futures = <Future<void>>[];
+            if (taskProvider != null) {
+              futures.add(taskProvider.loadTasks());
+            }
+            if (quoteProvider != null) {
+              futures.add(quoteProvider.fetchQuote(isRefresh: true));
+            }
+            if (futures.isNotEmpty) {
+              await Future.wait(futures);
+            }
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Modern Student Hero Banner
@@ -551,65 +584,334 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Responsive Upcoming Task Cards
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final width = constraints.maxWidth;
-                  final int crossAxisCount;
-                  if (width < 600) {
-                    crossAxisCount = 1;
-                  } else if (width < 840) {
-                    crossAxisCount = 2;
-                  } else {
-                    crossAxisCount = 3;
-                  }
-
-                  final upcomingCards = taskList.take(3).map((task) {
-                    return TaskCard(
-                      title: task.title,
-                      course: task.courseCategory,
-                      deadline: task.deadline,
-                      priority: task.priority,
-                      status: task.isCompleted ? 'Selesai' : 'Belum Selesai',
-                      description:
-                          task.description.isEmpty ? null : task.description,
-                      margin: crossAxisCount == 1 ? null : EdgeInsets.zero,
-                      onTap: () {
-                        if (onTaskTap != null) {
-                          onTaskTap!(task);
-                        } else {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => TaskDetailScreen(task: task),
-                            ),
-                          );
-                        }
-                      },
-                    );
-                  }).toList();
-
-                  if (crossAxisCount == 1) {
-                    return Column(children: upcomingCards);
-                  }
-
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: upcomingCards.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                      mainAxisExtent: crossAxisCount == 2 ? 235 : 245,
+              // If refresh failed while existing tasks are present, show warning banner
+              if (tasksErrorMessage != null && taskList.isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFFECACA),
+                      width: 1,
                     ),
-                    itemBuilder: (context, index) => upcomingCards[index],
-                  );
-                },
-              ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        size: 18,
+                        color: Color(0xFFDC2626),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Pembaruan tugas gagal. Menampilkan data sebelumnya.',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF991B1B),
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (taskProvider != null)
+                        InkWell(
+                          onTap: () => taskProvider!.loadTasks(),
+                          child: const Text(
+                            'Coba Lagi',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFDC2626),
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // 1. Loading state when tasks list is empty
+              if (isTasksLoading && taskList.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 24,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF2563EB),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 14),
+                      Text(
+                        'Memuat data tugas...',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              // 2. Error state when tasks list is empty
+              else if (tasksErrorMessage != null && taskList.isEmpty)
+                Container(
+                  key: const ValueKey('home_tasks_error_view'),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: const Color(0xFFFECACA),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEE2E2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.error_outline_rounded,
+                            color: Color(0xFFDC2626),
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'GAGAL MEMUAT TUGAS',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFFDC2626),
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              tasksErrorMessage,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF991B1B),
+                                height: 1.3,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            if (taskProvider != null)
+                              ElevatedButton.icon(
+                                key: const ValueKey('home_retry_tasks_button'),
+                                onPressed: () => taskProvider!.loadTasks(),
+                                icon: const Icon(
+                                  Icons.refresh_rounded,
+                                  size: 14,
+                                ),
+                                label: const Text('Coba Lagi'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFDC2626),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 6,
+                                  ),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              // 3. Empty state when tasks list is successfully loaded but empty
+              else if (taskList.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 24,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.task_alt_rounded,
+                          color: Color(0xFF2563EB),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Belum Ada Tugas Mendatang',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Semua tugas telah diselesaikan atau belum ada tugas aktif yang ditambahkan.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      ElevatedButton.icon(
+                        onPressed: onAddTask ??
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const AddTaskScreen(),
+                                ),
+                              );
+                            },
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        label: const Text('Tambah Tugas'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0F172A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          minimumSize: Size.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              // 4. Normal task cards
+              else
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final int crossAxisCount;
+                    if (width < 600) {
+                      crossAxisCount = 1;
+                    } else if (width < 840) {
+                      crossAxisCount = 2;
+                    } else {
+                      crossAxisCount = 3;
+                    }
+
+                    final upcomingCards = taskList.take(3).map((task) {
+                      return TaskCard(
+                        title: task.title,
+                        course: task.courseCategory,
+                        deadline: task.deadline,
+                        priority: task.priority,
+                        status: task.isCompleted ? 'Selesai' : 'Belum Selesai',
+                        description:
+                            task.description.isEmpty ? null : task.description,
+                        margin: crossAxisCount == 1 ? null : EdgeInsets.zero,
+                        onTap: () {
+                          if (onTaskTap != null) {
+                            onTaskTap!(task);
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TaskDetailScreen(task: task),
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    }).toList();
+
+                    if (crossAxisCount == 1) {
+                      return Column(children: upcomingCards);
+                    }
+
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: upcomingCards.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                        mainAxisExtent: crossAxisCount == 2 ? 235 : 245,
+                      ),
+                      itemBuilder: (context, index) => upcomingCards[index],
+                    );
+                  },
+                ),
             ],
           ),
         ),
+      ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'home_add_task_fab',
