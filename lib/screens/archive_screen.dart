@@ -433,27 +433,34 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                                   crossAxisCount = 2;
                                 }
 
-                                return GridView.builder(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                                  itemCount: displayedTasks.length,
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: crossAxisCount,
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 12,
-                                    mainAxisExtent: 205,
-                                  ),
-                                  itemBuilder: (context, index) {
-                                    final task = displayedTasks[index];
-                                    final isRestoring =
-                                        _restoringIds.contains(task.id);
+                                return Align(
+                                  alignment: Alignment.topCenter,
+                                  child: ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 1200),
+                                    child: GridView.builder(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 16, 16, 24),
+                                      itemCount: displayedTasks.length,
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: crossAxisCount,
+                                        crossAxisSpacing: 12,
+                                        mainAxisSpacing: 12,
+                                        mainAxisExtent: 205,
+                                      ),
+                                      itemBuilder: (context, index) {
+                                        final task = displayedTasks[index];
+                                        final isRestoring =
+                                            _restoringIds.contains(task.id);
 
-                                    return _buildArchivedTaskCard(
-                                      task,
-                                      isRestoring,
-                                    );
-                                  },
+                                        return _buildArchivedTaskCard(
+                                          task,
+                                          isRestoring,
+                                        );
+                                      },
+                                    ),
+                                  ),
                                 );
                               },
                             ),

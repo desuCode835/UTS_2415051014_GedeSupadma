@@ -528,8 +528,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
-            child: Column(
-              children: [
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Column(
+                  children: [
                 if (profileProvider?.errorMessage != null) ...[
                   Container(
                     width: double.infinity,
@@ -924,7 +928,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
-      ),
+    ),
+  ),
+),
     );
   }
 

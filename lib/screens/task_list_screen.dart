@@ -597,42 +597,49 @@ class _TaskListScreenState extends State<TaskListScreen> {
                                   crossAxisCount = 3;
                                 }
 
-                                return GridView.builder(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.fromLTRB(
-                                      16, 16, 16, 80),
-                                  itemCount: tasks.length,
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: crossAxisCount,
-                                    crossAxisSpacing: 14,
-                                    mainAxisSpacing: 14,
-                                    mainAxisExtent: crossAxisCount == 1
-                                        ? 245
-                                        : (crossAxisCount == 2 ? 240 : 250),
+                                return Align(
+                                  alignment: Alignment.topCenter,
+                                  child: ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 1200),
+                                    child: GridView.builder(
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(),
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 16, 16, 80),
+                                      itemCount: tasks.length,
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: crossAxisCount,
+                                        crossAxisSpacing: 14,
+                                        mainAxisSpacing: 14,
+                                        mainAxisExtent: crossAxisCount == 1
+                                            ? 245
+                                            : (crossAxisCount == 2 ? 240 : 250),
+                                      ),
+                                      itemBuilder: (context, index) {
+                                        final task = tasks[index];
+                                        return TaskCard(
+                                          title: task.title,
+                                          course: task.courseCategory,
+                                          deadline: task.deadline,
+                                          priority: task.priority,
+                                          status: task.isCompleted
+                                              ? 'Selesai'
+                                              : 'Belum Selesai',
+                                          description: task.description.isEmpty
+                                              ? null
+                                              : task.description,
+                                          margin: EdgeInsets.zero,
+                                          onTap: () => _handleTaskTap(task),
+                                          isToggling: _togglingTaskIds
+                                              .contains(task.id),
+                                          onToggleCompletion: () =>
+                                              _handleToggleTaskCompletion(task),
+                                        );
+                                      },
+                                    ),
                                   ),
-                                  itemBuilder: (context, index) {
-                                    final task = tasks[index];
-                                    return TaskCard(
-                                      title: task.title,
-                                      course: task.courseCategory,
-                                      deadline: task.deadline,
-                                      priority: task.priority,
-                                      status: task.isCompleted
-                                          ? 'Selesai'
-                                          : 'Belum Selesai',
-                                      description: task.description.isEmpty
-                                          ? null
-                                          : task.description,
-                                      margin: EdgeInsets.zero,
-                                      onTap: () => _handleTaskTap(task),
-                                      isToggling:
-                                          _togglingTaskIds.contains(task.id),
-                                      onToggleCompletion: () =>
-                                          _handleToggleTaskCompletion(task),
-                                    );
-                                  },
                                 );
                               },
                             ),

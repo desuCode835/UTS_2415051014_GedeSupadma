@@ -539,9 +539,13 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 // Header Card: Title, Course, and Badges
                 Container(
                   width: double.infinity,
@@ -1260,6 +1264,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

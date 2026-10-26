@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/task.dart';
 import '../providers/quote_provider.dart';
 import '../providers/task_provider.dart';
+import '../providers/profile_provider.dart';
 import '../data/sample_tasks.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/task_card.dart';
@@ -41,6 +42,17 @@ class HomeScreen extends StatelessWidget {
     } catch (_) {
       taskProvider = null;
     }
+
+    ProfileProvider? profileProvider;
+    try {
+      profileProvider = context.watch<ProfileProvider>();
+    } catch (_) {
+      profileProvider = null;
+    }
+
+    final studentName = profileProvider?.profile.name ?? 'Gede Supadma';
+    final studentNim = profileProvider?.profile.studentId ?? '2415051014';
+    final studentClass = profileProvider?.profile.className ?? 'PTI 5A';
 
     final List<Task> effectiveSourceTasks;
     if (tasks != null) {
@@ -215,86 +227,90 @@ class HomeScreen extends StatelessWidget {
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
-            child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Modern Student Hero Banner
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF0F172A),
-                      Color(0xFF1E293B),
-                      Color(0xFF1E3A8A),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x220F172A),
-                      blurRadius: 18,
-                      offset: Offset(0, 8),
-                    ),
-                  ],
-                ),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
+                    // Modern Student Hero Banner
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF0F172A),
+                            Color(0xFF1E293B),
+                            Color(0xFF1E3A8A),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x220F172A),
+                            blurRadius: 18,
+                            offset: Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  const Flexible(
-                                    child: Text(
-                                      'Halo, Gede Supadma!',
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            'Halo, $studentName!',
+                                            style: const TextStyle(
+                                              fontSize: 19,
+                                              fontWeight: FontWeight.w800,
+                                              color: Colors.white,
+                                              letterSpacing: -0.4,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.all(2),
+                                          decoration: const BoxDecoration(
+                                            color: Color(0x3360A5FA),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.verified_rounded,
+                                            size: 16,
+                                            color: Color(0xFF60A5FA),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'NIM: $studentNim • $studentClass',
                                       style: TextStyle(
-                                        fontSize: 19,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                        letterSpacing: -0.4,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white.withAlpha(200),
+                                        letterSpacing: -0.2,
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: const BoxDecoration(
-                                      color: Color(0x3360A5FA),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.verified_rounded,
-                                      size: 16,
-                                      color: Color(0xFF60A5FA),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'NIM: 2415051014 • PTI 5A',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white.withAlpha(200),
-                                  letterSpacing: -0.2,
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -912,7 +928,9 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-      ),
+    ),
+  ),
+),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'home_add_task_fab',
         onPressed: () {
